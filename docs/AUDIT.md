@@ -48,3 +48,15 @@ IMPORTANT LIMIT: run_command is an explicitly confirmed shell command with user 
 | P4-9 | src/workspace/paths.ts:44 | all realpath errors treated as absent; dangling links pass parent check | only ENOENT fallback; reject dangling symlinks | paths.test.ts |
 | P4-10 | src/workspace/runCommand.ts:20 | no outside-path command preflight | reject explicit traversal, absolute operands, outside symlinks | safety.test.ts; shell sandbox limitation above |
 | P4-11 | src/agent/controller.ts:89 | Stop during session creation can still start a turn | request AbortSignal and post-create cancellation check | cancel.test.ts; native network coverage pending |
+
+## Phase 5 — resilience
+
+Typecheck, 66 tests, build passed. Fault injection covers 401, unreachable host, 429, malformed envelope, SSE disconnect, and turn.done(error), with 1s/2s backoff and a fresh fallback session; disposable workspaces remain unchanged before approval. Real SDK fetch/SSE tests verify session/turn/cancel paths and wire bodies. Local OpenAPI read from http://localhost:8790/api/v1/openapi.json: 52 paths, OpenAPI 3.1.0. GET /api/v1/models returned an empty list; live provider tasks remain blocked. Startup setup now retries on demand, sharing in-flight setup. Default setup requests bounded to 15s with SDK retries disabled; turn streaming retains 600s timeout. After an approved write OR command, automatic replay stops to avoid duplicate effects. UI reports uncertain completion honestly; approved effects are not automatically rolled back.
+
+| ID | File and original line | Symptom / root cause | Fix | Regression |
+|---|---|---|---|---|
+| P5-1 | src/extension.ts:61 | offline activation permanently skips registration | lazy shared setup retried on request | resilience.test.ts setup recovery |
+| P5-2 | src/forge/turnRunner.ts:48 | malformed envelope throws raw TypeError | validate envelope and approval arrays | contract.test.ts malformed event |
+| P5-3 | src/agent/controller.ts:44 | retry replays already authorized side effects | stop replay after write/command approval | resilience.test.ts replay guard |
+| P5-4 | src/agent/controller.ts:111 | approvals reported as completed writes; commands omitted | count approved operations and report uncertainty | controller/cancel safety tests; replay guard |
+| P5-5 | src/forge/client.ts:8 | 600s setup timeout plus nested SDK retries causes long startup failure | 15s default, SDK retry off; 600s turn override | contract.test.ts request coverage |

@@ -34,9 +34,10 @@ export async function runTurn(
 ): Promise<TurnResult> {
   const events: TurnEvents = new Map();
   const result: TurnResult = { events, status: 'unknown', approvals: [] };
-  const stream = await client.sessions.createTurnStream(sessionId, { input }, { abortSignal: signal, maxRetries: 0 });
+  const stream = await client.sessions.createTurnStream(sessionId, { input }, { abortSignal: signal, maxRetries: 0, timeoutInSeconds: 600 });
 
   for await (const { data: event } of stream.withMetadata()) {
+    if (!event || typeof event !== 'object' || typeof event.type !== 'string' || typeof event.id !== 'string') throw new Error('TrueForge sent an invalid event.');
     if (isEventDelta(event)) {
       let base = events.get(event.id);
       if (!base) {
@@ -56,6 +57,7 @@ export async function runTurn(
         for (const tc of event.toolCalls ?? []) handlers.onToolCall(toolName(tc));
         break;
       case 'tool.approval_required':
+        if (!Array.isArray(event.toolCalls) || typeof event.threadId !== 'string') throw new Error('TrueForge sent an invalid approval event.');
         for (const ref of event.toolCalls) {
           // The ref only has ids; the thread comes from the model message that issued the call.
           const threadId = event.threadId;

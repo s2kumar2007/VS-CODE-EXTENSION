@@ -75,3 +75,13 @@ describe('cancellation (stage 6)', () => {
     await expect(ctl.cancel()).resolves.toBeUndefined();
   });
 });
+
+
+it('Stop during session creation never starts a turn and cancels the late session',async()=>{
+  let release!:(v:any)=>void,started!:()=>void;
+  const ready=new Promise<void>(r=>started=r);let turns=0;const cancels:string[]=[];
+  const client={sessions:{create:()=>{started();return new Promise(r=>release=r);},cancel:async(id:string)=>{cancels.push(id);},createTurnStream:async()=>{turns++;throw Error('must not run');}}} as any;
+  const ctl=new AgentController({getClient:()=>client,approvals:{decide:async()=>({status:'allow'}),cancelAll(){}},agents:()=>({primary:'p'}),retries:0});
+  const ui=new RecordingUi();const running=ctl.run('x',ui);await ready;await ctl.cancel();release({data:{id:'late'}});await running;
+  expect(turns).toBe(0);expect(cancels).toEqual(['late']);expect(ui.result?.status).toBe('cancelled');
+});

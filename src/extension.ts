@@ -31,7 +31,17 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
     root: root ?? '', ui: new ReviewPanel(ctx, provider, root ?? ''), store,
     readText: (abs) => api?.readText(abs) ?? Promise.resolve(undefined),
   });
+  let readyUrl: string | undefined;
+  let preparing: Promise<void> | undefined;
+  const ensureReady = (): Promise<void> => {
+    const url = getConfig().baseUrl;
+    if (readyUrl === url) return Promise.resolve();
+    if (preparing) return preparing;
+    preparing = bootstrap(ctx, api).then(() => { readyUrl = url; }).finally(() => { preparing = undefined; });
+    return preparing;
+  };
   const controller = new AgentController({
+    prepare: ensureReady,
     getClient: () => createClient(getConfig().baseUrl),
     approvals,
     agents: () => ({ primary: getConfig().agentName, fallback: getConfig().fallbackAgentName }),
@@ -46,20 +56,17 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
   );
 
   // Start the MCP server and register everything in the background: never block activation.
-  if (api) void bootstrap(ctx, api);
+  if (api) void ensureReady().catch(() => { void vscode.window.showWarningMessage('Forge: TrueForge is not reachable or setup failed. Start it and configure the models; Forge retries when you send a request.'); });
 }
 
-async function bootstrap(ctx: vscode.ExtensionContext, api: VsCodeEditorApi): Promise<void> {
-  try {
-    mcp = await startEditorMcpServer((server) => registerEditorTools(server, api));
-    const client = createClient(getConfig().baseUrl);
-    await registerMcpServer(client, mcp.url, mcp.token);
-    const agents = await loadAgentFiles(vscode.Uri.joinPath(ctx.extensionUri, 'agents').fsPath);
-    const failed = (await syncAgents(client, agents)).filter((r) => !r.ok);
-    if (failed.length) void vscode.window.showWarningMessage(`Forge: could not sync agent(s) ${failed.map((f) => f.name).join(', ')}. Is the model configured in TrueForge?`);
-  } catch {
-    void vscode.window.showWarningMessage('Forge: TrueForge is not reachable. Start it with `npx @truefoundry/trueforge@latest`, then reload the window.');
-  }
+async function bootstrap(ctx: vscode.ExtensionContext, api: VsCodeEditorApi | undefined): Promise<void> {
+  if (!api) throw new Error('Open a workspace folder first.');
+  mcp ??= await startEditorMcpServer((server) => registerEditorTools(server, api));
+  const client = createClient(getConfig().baseUrl);
+  await registerMcpServer(client, mcp.url, mcp.token);
+  const agents = await loadAgentFiles(vscode.Uri.joinPath(ctx.extensionUri, 'agents').fsPath);
+  const failed = (await syncAgents(client, agents)).filter(r => !r.ok);
+  if (failed.length) throw new Error('Configure the required models in TrueForge before running Forge.');
 }
 
 export async function deactivate(): Promise<void> { await mcp?.dispose(); }

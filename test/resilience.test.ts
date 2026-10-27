@@ -87,3 +87,26 @@ describe('controller resilience (stage 7)', () => {
     expect(gitStatus()).toBe('');
   });
 });
+
+
+describe('fault matrix', () => {
+  it.each(['401 Unauthorized', 'connect ECONNREFUSED', '429 rate limited', 'malformed event', 'SSE drop', 'turn error'])('recovers from %s with backoff then a fresh fallback session',async(reason)=>{
+    const { root,gitStatus }=tempRepo();
+    const fail=()=>{throw Error(reason+'\n at private stack');};
+    const tf=new FakeTrueForge({p:[fail,fail,fail],f:[()=>[created(),done()]]});
+    const sleeps:number[]=[];
+    const ctl=new AgentController({getClient:()=>tf.client,approvals:{decide:async()=>({status:'deny',reason:'no'}),cancelAll(){}},agents:()=>({primary:'p',fallback:'f'}),sleep:async ms=>{sleeps.push(ms);}});
+    const ui=new RecordingUi();await ctl.run('test',ui);
+    expect(sleeps).toEqual([1000,2000]);expect(ui.result?.status).toBe('done');expect(gitStatus()).toBe('');
+  });
+  it('retries setup on the next request after activation was offline',async()=>{
+    let setup=0;const tf=new FakeTrueForge({p:[()=>[created(),done()]]});
+    const ctl=new AgentController({getClient:()=>tf.client,prepare:async()=>{if(++setup===1)throw Error('offline');},approvals:{decide:async()=>({status:'allow'}),cancelAll(){}},agents:()=>({primary:'p'}),retries:0});
+    const first=new RecordingUi();await ctl.run('a',first);expect(first.result?.status).toBe('error');
+    const second=new RecordingUi();await ctl.run('b',second);expect(second.result?.status).toBe('done');expect(setup).toBe(2);
+  });
+  it('never replays an attempt after a write approval',async()=>{
+    const calls:string[]=[];const {o}=opts(async a=>{calls.push(a);throw Error('drop after write');},{canRetry:()=>false});
+    await expect(runWithFallback(o)).rejects.toThrow('automatic replay was skipped');expect(calls).toEqual(['p']);
+  });
+});

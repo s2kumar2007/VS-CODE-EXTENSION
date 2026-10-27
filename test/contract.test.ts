@@ -41,3 +41,26 @@ describe('TrueForge wire contract', () => {
     expect(describeToolCall(result.events, result.approvals[0]!)?.args.path).toBe('a');
   });
 });
+
+
+it('rejects a malformed event envelope instead of treating it as successful output',async()=>{
+  const tf=new FakeTrueForge({p:[()=>[{}]]});
+  const {data:s}=await tf.client.sessions.create({agent:{name:'p'}});
+  await expect(runTurn(tf.client,s.id,[],{onTextDelta(){},onToolCall(){}})).rejects.toThrow('invalid event');
+});
+
+
+it('uses the real SDK SSE decoder and serializes session, turns and cancel correctly',async()=>{
+  const requests:{url:string;body:any}[]=[];
+  const client=new TrueForge({baseUrl:'http://wire.test',maxRetries:0,fetch:async(url,init)=>{
+    requests.push({url:String(url),body:init?.body?JSON.parse(String(init.body)):undefined});
+    if(String(url).endsWith('/turns')) return new Response('id: 1\ndata: '+JSON.stringify({type:'turn.done',id:'e',thread_id:null,created_at:'x',state:{status:'done',completed_at:'x',output:null,required_actions:[]}})+'\n\n',{headers:{'Content-Type':'text/event-stream'}});
+    return Response.json({data:{id:'sess'}});
+  }});
+  const {data:s}=await client.sessions.create({agent:{name:'p'}});
+  expect((await runTurn(client,s.id,[{type:'user.message',content:'x'}],{onTextDelta(){},onToolCall(){}})).status).toBe('done');
+  await client.sessions.cancel(s.id,{});
+  expect(requests.map(r=>r.url)).toEqual(['http://wire.test/api/v1/sessions','http://wire.test/api/v1/sessions/sess/turns','http://wire.test/api/v1/sessions/sess/cancel']);
+  expect(requests[0]?.body.agent).toEqual({name:'p'});
+  expect(requests[1]?.body).toMatchObject({stream:true,input:[{type:'user.message',content:'x'}]});
+});

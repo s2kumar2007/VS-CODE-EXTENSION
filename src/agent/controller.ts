@@ -13,9 +13,10 @@ export interface ControllerDeps {
   /** Extra cleanup on cancel (e.g. discard queued proposals). */
   onCancel?: () => void;
   onRunStart?: () => void;
+  prepare?: () => Promise<void>;
 }
 
-const isWriteTool = (n: string) => /propose_write$/.test(n);
+const isMutatingTool = (n: string) => /(?:propose_write|run_command)$/.test(n);
 
 /**
  * Drives one user request end to end: session -> turn -> (approvals -> new turn)* -> done.
@@ -26,7 +27,7 @@ export class AgentController {
   private cancelled = false;
   private abort = new AbortController();
   private sessionId: string | undefined;
-  private approvedWrites = 0;
+  private approvedOperations = 0;
 
   constructor(private d: ControllerDeps) {}
 
@@ -37,7 +38,7 @@ export class AgentController {
     this.running = true;
     this.cancelled = false;
     this.abort = new AbortController();
-    this.approvedWrites = 0;
+    this.approvedOperations = 0;
     this.d.onRunStart?.();
     const cfg = this.d.agents();
     try {
@@ -48,6 +49,7 @@ export class AgentController {
         backoffMs: this.d.backoffMs ?? 1000,
         sleep: this.d.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms))),
         isCancelled: () => this.cancelled,
+        canRetry: () => this.approvedOperations === 0,
         attempt: (agent) => this.attempt(agent, request, ui),
         onRetry: (agent, n) => ui.notice(`Request to "${agent}" failed, retrying (${n})...`),
         onFallback: () => ui.notice('Primary model failed, using fallback'),
@@ -57,7 +59,7 @@ export class AgentController {
       if (e instanceof CancelledError) ui.finished(this.cancelInfo());
       else {
         const base = e instanceof ForgeFailure ? e.message : `Forge could not complete the request (${e instanceof Error ? e.message.split('\n')[0] : 'unknown error'}).`;
-        ui.finished({ status: 'error', message: `${base} ${this.approvedWrites ? `${this.approvedWrites} change(s) had already been applied; use "Forge: Undo last applied change" to revert.` : 'No changes were made to your workspace.'}` });
+        ui.finished({ status: 'error', message: `${base} ${this.approvedOperations ? `${this.approvedOperations} approved operation(s) may have completed; inspect the workspace and use "Forge: Undo last applied change" to revert.` : 'No changes were made to your workspace.'}` });
       }
     } finally {
       this.d.approvals.cancelAll();
@@ -78,11 +80,13 @@ export class AgentController {
   }
 
   private cancelInfo() {
-    return { status: 'cancelled' as const, message: this.approvedWrites ? `Cancelled - ${this.approvedWrites} change(s) were already applied before you stopped.` : 'Cancelled - no changes applied' };
+    return { status: 'cancelled' as const, message: this.approvedOperations ? `Cancelled - ${this.approvedOperations} approved operation(s) may have completed before you stopped.` : 'Cancelled - no changes applied' };
   }
 
   private async attempt(agent: string, request: string, ui: AgentUi): Promise<'done' | 'cancelled'> {
     this.d.approvals.cancelAll();
+    await this.d.prepare?.();
+    if (this.cancelled) return 'cancelled';
     const client = this.d.getClient();
     const { data: session } = await client.sessions.create({ agent: { name: agent } }, { abortSignal: this.abort.signal });
     this.sessionId = session.id;
@@ -104,7 +108,7 @@ export class AgentController {
             ? await this.d.approvals.decide(info, this.abort.signal)
             : { status: 'deny' as const, reason: 'Could not read the tool call arguments.' };
           if (this.cancelled) return 'cancelled'; // nothing is sent after a cancel
-          if (decision.status === 'allow' && info && isWriteTool(info.name)) this.approvedWrites++;
+          if (decision.status === 'allow' && info && isMutatingTool(info.name)) this.approvedOperations++;
           items.push({ type: 'user.tool_approval', threadId: a.threadId, toolCallId: a.toolCallId, approval: decision });
         }
         input = items; // a resume turn must not mix user.message with approvals

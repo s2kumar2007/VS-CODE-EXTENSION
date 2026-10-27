@@ -4,7 +4,7 @@ export const MCP_SERVER_NAME = 'forge-editor';
 
 /** One client per base URL; 10 min timeout because agent turns can be long. */
 export function createClient(baseUrl: string): TrueForge {
-  return new TrueForge({ baseUrl, timeoutInSeconds: 600 });
+  return new TrueForge({ baseUrl, timeoutInSeconds: 15, maxRetries: 0 });
 }
 
 /**
