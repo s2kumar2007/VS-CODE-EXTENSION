@@ -10,7 +10,7 @@ import { DecisionStore } from './review/decisions';
 import { UndoStack } from './review/undo';
 import { AgentController } from './agent/controller';
 import { ReviewApprovals } from './review/approvals';
-import { BasicReviewUi } from './review/basicUi';
+import { ReviewPanel } from './review/ReviewPanel';
 import { ProposalProvider, PROPOSAL_SCHEME } from './review/proposalProvider';
 import { inlineEdit } from './inline/inlineEdit';
 
@@ -26,7 +26,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
   ctx.subscriptions.push(vscode.workspace.registerTextDocumentContentProvider(PROPOSAL_SCHEME, provider));
 
   const approvals = new ReviewApprovals({
-    root: root ?? '', ui: new BasicReviewUi(provider), store,
+    root: root ?? '', ui: new ReviewPanel(ctx, provider, root ?? ''), store,
     readText: (abs) => api?.readText(abs) ?? Promise.resolve(undefined),
   });
   const controller = new AgentController({

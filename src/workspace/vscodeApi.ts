@@ -102,8 +102,7 @@ export class VsCodeEditorApi implements EditorApi {
     const doc = await vscode.workspace.openTextDocument(uri);
     if (doc.getText() !== e.after) return `Cannot undo ${e.label}: it was modified after the Forge change.`;
     const edit = new vscode.WorkspaceEdit();
-    if (e.before === '' && doc.getText() !== '') { edit.replace(uri, new vscode.Range(doc.positionAt(0), doc.positionAt(doc.getText().length)), e.before); }
-    else edit.replace(uri, new vscode.Range(doc.positionAt(0), doc.positionAt(doc.getText().length)), e.before);
+    edit.replace(uri, new vscode.Range(doc.positionAt(0), doc.positionAt(doc.getText().length)), e.before);
     await vscode.workspace.applyEdit(edit);
     await doc.save();
     this.undo.pop();

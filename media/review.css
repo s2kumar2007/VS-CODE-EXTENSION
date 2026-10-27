@@ -1,0 +1,9 @@
+body { font-family: var(--vscode-font-family); color: var(--vscode-foreground); padding: 8px; }
+.hunk { border: 1px solid var(--vscode-panel-border); border-radius: 4px; margin: 8px 0; }
+.hunk.rejected { opacity: 0.5; }
+.hunk header { display: flex; justify-content: space-between; padding: 4px 8px; background: var(--vscode-editor-inactiveSelectionBackground); }
+pre { margin: 0; padding: 4px 8px; font-family: var(--vscode-editor-font-family); overflow-x: auto; }
+.del { background: rgba(255,0,0,0.15); } .add { background: rgba(0,200,0,0.15); }
+button { background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: 0; padding: 4px 10px; margin-right: 6px; cursor: pointer; }
+button.off { background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground); }
+#bottom { position: sticky; bottom: 0; padding: 8px 0; background: var(--vscode-editor-background); }
