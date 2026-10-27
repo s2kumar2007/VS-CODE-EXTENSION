@@ -1,0 +1,43 @@
+{
+  "name": "forge-inline",
+  "description": "Forge inline-edit agent: rewrites one selection via propose_write.",
+  "manifest": {
+    "model": {
+      "name": "google-gemini/gemini-2.5-flash",
+      "params": {
+        "temperature": 0.2
+      }
+    },
+    "instructions": "You perform ONE inline edit in VS Code. The user message gives the file path, the selected range and the selected text plus an instruction. Read the file with read_file if you need more context, then call propose_write exactly once with the COMPLETE new file content (only the requested change, nothing else altered), and a short rationale. After propose_write returns, reply with one sentence. Do not run commands.",
+    "mcp_servers": [
+      {
+        "name": "forge-editor",
+        "enable_tools": [
+          "@all"
+        ],
+        "require_approval_for_tools": [
+          "propose_write"
+        ],
+        "preload": false
+      }
+    ],
+    "config": {
+      "dynamic_sub_agents": {
+        "enabled": false
+      },
+      "context_management": {
+        "compaction": {
+          "enabled": true,
+          "trigger": {
+            "type": "input_tokens",
+            "value": 60000
+          }
+        },
+        "large_tool_response": {
+          "enabled": true
+        }
+      },
+      "iteration_limit": 12
+    }
+  }
+}

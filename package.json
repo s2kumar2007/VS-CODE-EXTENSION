@@ -1,0 +1,66 @@
+{
+  "name": "forge-agent",
+  "displayName": "Forge Agent",
+  "description": "Agentic coding assistant for VS Code. The agent loop runs on TrueForge; the editor is exposed to it as MCP tools.",
+  "version": "0.1.0",
+  "license": "MIT",
+  "publisher": "forge-agent-dev",
+  "engines": {
+    "vscode": "^1.90.0",
+    "node": ">=22.14"
+  },
+  "categories": [
+    "AI",
+    "Other"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "forge.openPanel",
+        "title": "Forge: Open Agent Panel"
+      }
+    ],
+    "configuration": {
+      "title": "Forge Agent",
+      "properties": {
+        "forge.baseUrl": {
+          "type": "string",
+          "default": "http://localhost:8790",
+          "description": "TrueForge server URL."
+        },
+        "forge.agentName": {
+          "type": "string",
+          "default": "forge-agent",
+          "description": "Primary TrueForge agent used by the panel."
+        },
+        "forge.fallbackAgentName": {
+          "type": "string",
+          "default": "forge-agent-fallback",
+          "description": "Agent used when the primary fails (different model/provider)."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "@truefoundry/trueforge-sdk": "^0.180.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "@types/vscode": "^1.90.0",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
+  }
+}
