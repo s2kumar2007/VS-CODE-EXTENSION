@@ -60,3 +60,15 @@ Typecheck, 66 tests, build passed. Fault injection covers 401, unreachable host,
 | P5-3 | src/agent/controller.ts:44 | retry replays already authorized side effects | stop replay after write/command approval | resilience.test.ts replay guard |
 | P5-4 | src/agent/controller.ts:111 | approvals reported as completed writes; commands omitted | count approved operations and report uncertainty | controller/cancel safety tests; replay guard |
 | P5-5 | src/forge/client.ts:8 | 600s setup timeout plus nested SDK retries causes long startup failure | 15s default, SDK retry off; 600s turn override | contract.test.ts request coverage |
+
+## Phase 6 — context
+
+Typecheck, 72 tests, build passed. A 5,000-file / 10,000-line fixture checks actual rendered char/4 cost, including preamble, file labels, reasons, fences and separators. This is a deterministic estimate, NOT a provider-tokenizer guarantee. Dense windows capped at 40 lines; explicit files capped to 40 lines plus 25 signatures; no raw whole-file concatenation branch remains (short snippets may naturally span an entire tiny file). Agent-mode host tests prove automatic context and real paths/reasons reach both prompt and Context used. Reads enforce realpath containment. Stop during retrieval suppresses the later model request; overlapping sends are ignored.
+
+| ID | File and original line | Symptom / root cause | Fix | Regression |
+|---|---|---|---|---|
+| P6-1 | src/context/assemble.ts:133; budget.ts:28 | budget excludes prompt wrapper/metadata | count exact rendered representation and reserve preamble | context.test.ts 5000-file fixture |
+| P6-2 | src/context/assemble.ts:40 | dense hits merge into unbounded slice | cap merged windows at 40 lines | context.test.ts dense hits |
+| P6-3 | src/context/assemble.ts:66 | explicit files <=120 lines pasted whole | bounded 40-line head + capped signatures | context.test.ts explicit mention |
+| P6-4 | src/context/vscodeDeps.ts:28 | context read can follow outside symlink | realpath containment | contextHost.test.ts |
+| P6-5 | src/panel/ChatPanel.ts:57 | Stop/second send during retrieval races model start | panel sending guard and abort check | contextHost.test.ts |

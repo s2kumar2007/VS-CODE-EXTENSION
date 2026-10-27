@@ -19,6 +19,8 @@ type ToWebview =
 /** Webview chat. A thin UI over AgentController; all network work is async so the host never blocks. */
 export class ChatPanel {
   private static current: ChatPanel | undefined;
+  private sending = false;
+  private sendAbort = new AbortController();
 
   static show(ctx: vscode.ExtensionContext, controller: AgentController, deps: WorkspaceContextDeps): void {
     if (ChatPanel.current) { ChatPanel.current.panel.reveal(); return; }
@@ -32,18 +34,20 @@ export class ChatPanel {
 
   private constructor(private panel: vscode.WebviewPanel, private ctx: vscode.ExtensionContext, private controller: AgentController, private deps: WorkspaceContextDeps) {
     panel.webview.html = this.html(panel.webview);
-    panel.onDidDispose(() => { ChatPanel.current = undefined; });
+    panel.onDidDispose(() => { if (this.sending) { this.sendAbort.abort(); void this.controller.cancel(); } ChatPanel.current = undefined; });
     panel.webview.onDidReceiveMessage((m: { type: string; text?: string; prefix?: string }) => {
       if (m.type === 'send' && m.text) void this.send(m.text);
       if (m.type === 'suggest') void this.deps.suggest(m.prefix ?? '').then((items) => this.post({ type: 'suggestions', items }));
-      if (m.type === 'stop') void this.controller.cancel();
+      if (m.type === 'stop') { this.sendAbort.abort(); void this.controller.cancel(); }
     });
   }
 
   private post(msg: ToWebview): void { void this.panel.webview.postMessage(msg); }
 
   private async send(text: string): Promise<void> {
-    if (this.controller.busy) return;
+    if (this.sending || this.controller.busy) return;
+    this.sending = true;
+    this.sendAbort = new AbortController();
     this.post({ type: 'userMessage', text });
     this.post({ type: 'busy', value: true });
     const ui: AgentUi = {
@@ -60,8 +64,9 @@ export class ChatPanel {
         this.post({ type: 'context', items: ctx.items.map((i) => ({ label: i.label, reason: i.reason, tokens: i.tokens })), tokens: ctx.tokens, budget: ctx.budget });
         message = `${ctx.text}\n\n## Request\n${text}`;
       } catch { this.post({ type: 'notice', text: 'Context assembly failed; sending the request without it.' }); }
+      if (this.sendAbort.signal.aborted) { ui.finished({ status: 'cancelled', message: 'Cancelled - no changes applied' }); return; }
       await this.controller.run(message, ui);
-    } finally { this.post({ type: 'busy', value: false }); }
+    } finally { this.sending = false; this.post({ type: 'busy', value: false }); }
   }
 
   private html(webview: vscode.Webview): string {

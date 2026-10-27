@@ -50,3 +50,25 @@ describe('assembleContext', () => {
     expect(r.items.some((i) => i.reason.includes('imports cli'))).toBe(true);
   });
 });
+
+
+describe('full rendered context bounds',()=>{
+  it('accounts for metadata and fences with thousands of repository files',async()=>{
+    const huge=Array.from({length:10000},(_,i)=>'config_value_'+i+' = "'+ 'x'.repeat(200)+'"').join('\n');
+    const deps:ContextDeps={listFiles:async()=>Array.from({length:5000},(_,i)=>'src/config'+i+'.py'),searchKeyword:async()=>Array.from({length:1000},(_,i)=>({path:'src/config0.py',line:i+1,text:'config'})),searchImporters:async()=>[],readText:async()=>huge,findSymbol:async()=>undefined};
+    for(const budget of [50,500,1500]){
+      const r=await assembleContext('config @file:src/config0.py',deps,budget);
+      expect(estimateTokens(r.text)).toBeLessThanOrEqual(budget);expect(r.tokens).toBe(estimateTokens(r.text));
+      expect(r.text).not.toContain('config_value_9999');expect(r.items.every(i=>i.reason.length>0)).toBe(true);
+    }
+  });
+  it('caps dense hit windows rather than merging the entire file',()=>{
+    const w=windows(Array.from({length:1000},(_,i)=>i+1),1000);
+    expect(w).toHaveLength(2);expect(w.every(([a,b])=>b-a<40)).toBe(true);
+  });
+  it('slices explicit mentions smaller than the old whole-file threshold',async()=>{
+    const body=Array.from({length:100},(_,i)=>'# line '+i).join('\n');
+    const deps:ContextDeps={listFiles:async()=>['a.py'],searchKeyword:async()=>[],searchImporters:async()=>[],readText:async()=>body,findSymbol:async()=>undefined};
+    const r=await assembleContext('@file:a.py',deps,2000);expect(r.text).not.toContain('# line 99');
+  });
+});

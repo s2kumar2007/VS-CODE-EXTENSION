@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import type { ContextDeps } from './assemble';
 import type { VsCodeEditorApi } from '../workspace/vscodeApi';
 import { rgFiles, rgRegex, rgText } from '../workspace/ripgrep';
-import { resolveInside } from '../workspace/paths';
+import { resolveInsideReal } from '../workspace/paths';
 
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -22,7 +22,7 @@ export class WorkspaceContextDeps implements ContextDeps {
     const m = escapeRe(mod);
     return rgRegex(this.rgPath, this.root, `^\\s*(from\\s+[\\w.]*\\b${m}\\b|import\\s+.*\\b${m}\\b)|(require|from)\\s*\\(?['"][^'"]*\\b${m}\\b`, 1);
   }
-  readText(rel: string) { try { return this.api.readText(resolveInside(this.root, rel)); } catch { return Promise.resolve(undefined); } }
+  async readText(rel: string) { try { return await this.api.readText(await resolveInsideReal(this.root, rel)); } catch { return undefined; } }
   async findSymbol(name: string) {
     const hits = await this.api.searchSymbols(name, 10);
     return hits.find((h) => h.name === name) ?? hits[0];

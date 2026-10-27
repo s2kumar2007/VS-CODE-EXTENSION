@@ -1,4 +1,4 @@
-import { estimateTokens, packContext, type ContextItem, type PackedItem } from './budget';
+import { estimateTokens, packContext, renderContextItem, type ContextItem, type PackedItem } from './budget';
 import { extractKeywords, parseMentions } from './keywords';
 import { topLevelSymbols } from './symbols';
 import type { SearchHit, SymbolHit } from '../workspace/types';
@@ -32,7 +32,7 @@ export function windows(hitLines: number[], total: number, pad = 6, maxSlices = 
   for (const l of sorted) {
     const a = Math.max(1, l - pad), b = Math.min(total, l + pad);
     const last = ws[ws.length - 1];
-    if (last && a <= last[1] + 1) last[1] = Math.max(last[1], b); else ws.push([a, b]);
+    if (last && a <= last[1] + 1 && b - last[0] < 40) last[1] = Math.max(last[1], b); else ws.push([a, b]);
   }
   return ws.slice(0, maxSlices);
 }
@@ -55,9 +55,9 @@ export async function assembleContext(request: string, deps: ContextDeps, budget
     const text = await deps.readText(f);
     if (text === undefined) continue;
     const lines = text.split('\n');
-    const sigs = topLevelSymbols(text, f).map((s) => `${s.line}: ${s.signature}`).join('\n');
-    const body = lines.length <= 120 ? text : `${slice(lines, 1, 60)}\n...\n[signatures]\n${sigs}`;
-    items.push({ label: `${f}${lines.length <= 120 ? '' : ':1-60 + signatures'}`, reason: 'mentioned with @file', text: body, priority: 100 });
+    const sigs = topLevelSymbols(text, f).slice(0, 25).map((s) => `${s.line}: ${s.signature}`).join('\n');
+    const body = `${slice(lines, 1, 40)}\n...\n[signatures]\n${sigs}`;
+    items.push({ label: `${f}:1-${Math.min(40, lines.length)} + signatures`, reason: 'mentioned with @file', text: body, priority: 100 });
   }
   for (const name of mentions.symbols) {
     const hit = await deps.findSymbol(name);
@@ -125,10 +125,13 @@ export async function assembleContext(request: string, deps: ContextDeps, budget
   // --- 3. repo map, capped at ~20% of the budget ---
   items.push({ label: 'repo map', reason: 'file tree overview', text: renderTree(files, Math.floor(budget * 0.2) * 4), priority: 30 });
 
-  const { packed, used } = packContext(items, budget);
-  const body = packed.map((p) => (p.label === 'repo map' ? `### Repo map\n${p.text}` : `### ${p.label}\n(why: ${p.reason})\n\`\`\`${fence(p.label)}\n${p.text}\n\`\`\``)).join('\n\n');
-  const text = `[Forge context: selected automatically under a ${budget}-token budget (${used} used). Treat as hints; use search_workspace/read_file for more. State which files you chose and why.]\n\n${body}`;
-  return { text, items: packed, tokens: used, budget, keywords };
+  const limit = Number.isFinite(budget) ? Math.max(0, Math.floor(budget)) : 0;
+  const prefix = '[Forge context: automatically selected under a ' + limit + '-token estimated budget. Treat snippets as hints; use search_workspace/read_file for more. State files and reasons.]\n\n';
+  if (estimateTokens(prefix) >= limit) return { text: '', items: [], tokens: 0, budget: limit, keywords };
+  const { packed } = packContext(items, limit - estimateTokens(prefix));
+  const text = prefix + packed.map(renderContextItem).join('');
+  return { text, items: packed, tokens: estimateTokens(text), budget: limit, keywords };
+
 }
 
 /** Directory -> files listing, truncated to maxChars. */

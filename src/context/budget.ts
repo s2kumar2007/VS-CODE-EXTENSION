@@ -10,6 +10,11 @@ export interface ContextItem {
 }
 export interface PackedItem extends ContextItem { tokens: number; truncated: boolean }
 
+/** The exact wrapper sent to the agent; include it in the budget. */
+export const renderContextItem = (it: ContextItem): string => it.label === 'repo map'
+  ? '### Repo map\n' + it.text + '\n\n'
+  : '### ' + it.label + '\n(why: ' + it.reason + ')\n\x60\x60\x60\n' + it.text + '\n\x60\x60\x60\n\n';
+
 /**
  * Greedy packer. Items go in by priority; an item that doesn't fit is truncated (line-aligned)
  * if at least 80 tokens remain, otherwise dropped. Never exceeds the budget.
@@ -19,13 +24,14 @@ export function packContext(items: ContextItem[], budgetTokens: number): { packe
   const dropped: string[] = [];
   let used = 0;
   for (const it of [...items].sort((a, b) => b.priority - a.priority)) {
-    const cost = estimateTokens(it.text);
+    const cost = estimateTokens(renderContextItem(it));
     const left = budgetTokens - used;
     if (cost <= left) { packed.push({ ...it, tokens: cost, truncated: false }); used += cost; continue; }
     if (left >= 80) {
-      const cut = it.text.slice(0, left * CHARS_PER_TOKEN - 24); // leave room for the marker
+      const overhead = renderContextItem({ ...it, text: '' }).length;
+      const cut = it.text.slice(0, Math.max(0, left * CHARS_PER_TOKEN - overhead - 24)); // leave room for the marker
       const text = cut.slice(0, Math.max(cut.lastIndexOf('\n'), 0) || cut.length) + '\n...[truncated]';
-      const tokens = estimateTokens(text);
+      const tokens = estimateTokens(renderContextItem({ ...it, text }));
       if (tokens <= left) { packed.push({ ...it, text, tokens, truncated: true }); used += tokens; continue; }
     }
     dropped.push(it.label);
