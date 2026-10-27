@@ -2,7 +2,7 @@
 
 ## 1. Team
 
-Submission team name, members and roles have not been supplied. Repository ownership is recorded in Git; no team identity is invented here.
+Verified repository owner: Sunil Kumar (GitHub: s2kumar2007). Team name, other members and role assignments are unconfirmed. The owner authorized using verified details only; no additional team identity is inferred.
 
 ## 2. Starting point (from scratch)
 
@@ -43,7 +43,7 @@ Configure Google Gemini and a custom OpenAI-compatible provider named groq in Tr
 | B flask config, >=3 files | Blocked: no configured provider | No successful multi-file model edit claimed |
 | C bad key / bad endpoint | Automated fault tests pass; manual offline activation observed | resilience.test.ts, contract.test.ts, audit phase 3 |
 | Native Windows review-edit undo | Passed | docs/native-host-results.json |
-| macOS / Linux runtime | Not executed locally | CI matrix added; results pending |
+| Windows / macOS / Linux CI | Passed for commit 3236dac | docs/ci-results.json; GitHub run 40505578815 |
 
 Task A/B execution times, live tokens, provider costs and model-generated Flask changes are not available. No fabricated success or stack traces. Exact observed launch failure and activation message are in the audit. The rubric evidence mapping is in docs/RUBRIC.md; official label definitions were not supplied.
 

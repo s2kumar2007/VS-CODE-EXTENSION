@@ -25,7 +25,16 @@ export async function run(): Promise<void> {
     await vscode.window.showTextDocument(doc);
     approve(before, after); assert.match(await api.applyProposal(file, after), /applied/);
     assert.equal(doc.getText(), after);
+    // Startup panels can steal keyboard focus; target the editor before Undo.
+    await vscode.commands.executeCommand('workbench.action.focusActiveEditorGroup');
+    const changed = new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(() => { subscription.dispose(); reject(new Error('Native Undo did not restore the document within 5 seconds')); }, 5000);
+      const subscription = vscode.workspace.onDidChangeTextDocument(event => {
+        if (event.document.uri.toString() === doc.uri.toString() && doc.getText() === before) { clearTimeout(timer); subscription.dispose(); resolve(); }
+      });
+    });
     await vscode.commands.executeCommand('undo');
+    await changed;
     assert.equal(doc.getText(), before, 'one native undo must revert a reviewed change');
     await doc.save(); evidence.push('one native undo step restores CRLF content');
     undo.pop();

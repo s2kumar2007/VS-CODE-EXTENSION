@@ -36,3 +36,7 @@ Original line numbers refer to audited base commit 4ca90c9. Each defect was repo
 | P8-2 | agents/forge-agent-fallback.json | 6 | Fallback retired for general developer accounts | obsolete model default | gpt-oss-120b alias and provider ID | test/docs.test.ts |
 | P8-3 | README.md | 55 | Unsupported unchanged-workspace claim | ignores prior approved effects | honest scoped safety/recovery docs | docs/WRITEUP.md; tests cover effects |
 | P8-4 | src/forge/turnRunner.ts | 75 | Review opens on truncated SSE | pending status accepted without terminal event | require terminal done | test/contract.test.ts |
+
+| P9-1 | package.json | 1 | VSIX packaging fails on relative README links | repository URL missing | add repository metadata | test/docs.test.ts and successful VSCE package |
+| P9-2 | README.md | 29 | local MCP registration returns HTTP 400 | TrueForge outbound policy blocks loopback by default | document explicit 127.0.0.1 allowlist | live registration retry recorded in follow-up audit |
+| P9-3 | test/native/index.ts | 29 | native Undo assertion races UI/document updates | global Undo focus and event observation not synchronized | focus editor, await document change | installed VSIX native host passed |

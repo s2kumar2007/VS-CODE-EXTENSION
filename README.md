@@ -16,7 +16,11 @@ Requires Node 22.14+ (validated with Node 24), VS Code 1.90+, git, and Python fo
 
 3. In a separate terminal, start TrueForge:
 
+    # PowerShell: allow only the local editor MCP host
+    $env:OUTBOUND_URL_ALLOWED_HOSTS='["127.0.0.1"]'
     npx @truefoundry/trueforge@latest
+
+   macOS/Linux: `OUTBOUND_URL_ALLOWED_HOSTS='["127.0.0.1"]' npx @truefoundry/trueforge@latest`. This explicit host allowlist is required by TrueForge 0.180.1 for the loopback editor MCP URL.
 
    UI: http://localhost:8790. Local API docs: http://localhost:8790/api/v1/docs, schema: /api/v1/openapi.json. Tested CLI version: 0.180.1, SDK: 0.180.0. This extension assumes local no-auth TrueForge; authenticated remote hosting is not configured here.
 4. Configure the two providers below in TrueForge Settings, including your own keys. The server starts with NO configured models. Never put keys in this repository or VS Code settings.
@@ -69,7 +73,7 @@ Use pallets/flask tag 3.1.3 (commit 22d924701a6ae2e4cd01e9a15bbaf3946094af65). S
 
 Unit/integration checks do not need model keys. The audit includes a real Windows VS Code host test for CRLF/undo/ripgrep. Build that optional test with node scripts/build-native-tests.cjs <scratch-output-directory>, then launch a disposable workspace with --extensionTestsPath=<scratch-output-directory>/index.cjs. Set FORGE_NATIVE_RESULT to a scratch JSON path to capture results. Never use your working project as the native test workspace: it creates native.txt.
 
-Windows validation passed. The three-OS GitHub Actions workflow is provided; macOS/Linux execution is pending. The ripgrep platform binary must be installed as an optional dependency; build/package a VSIX on its target platform. A universal VSIX is not supplied.
+Windows, macOS and Linux CI passed for commit 3236dac (docs/ci-results.json). Native editor UI tests remain Windows-only. The ripgrep platform binary must be installed as an optional dependency; build/package a VSIX on its target platform. A universal VSIX is not supplied.
 
 Live model-backed Task A and Task B are NOT yet passed: the audited TrueForge server has no configured providers. Task C has automated fault coverage and manually observed offline-activation behavior, not a verified live bad-key provider run. Full reproduction status is recorded honestly in the audit.
 

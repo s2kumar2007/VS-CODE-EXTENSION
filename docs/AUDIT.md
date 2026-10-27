@@ -93,3 +93,11 @@ Late resilience correction: an approval event followed by EOF without turn.done 
 Unfinished validation: model-backed Flask Tasks A/B and live provider-key Task C need configured models (GET /api/v1/models was empty). macOS/Linux CI and packaged VSIX installation are pending. Arbitrary confirmed commands remain unsandboxed; no claim of complete filesystem containment or rollback is made. Nothing was pushed or published.
 
 Final phase gate: npm run typecheck && npm test && npm run build PASSED; 79 tests across 15 test files. Windows native host evidence passed separately. All declared npm versions exist.
+
+## Follow-up validation
+
+GitHub Actions run 40505578815 completed successfully for 3236dac on windows-latest, ubuntu-latest and macos-latest; docs/ci-results.json records the exact commit and run URL. These are hosted Node checks, not native macOS/Linux UI tests.
+
+VSCE 4.0.0 initially rejected packaging because package.json omitted repository metadata, preventing README relative-link rewriting. Fixed in fe7481c, with a docs regression; typecheck, 80 tests and build passed. Windows x64 VSIX packaged successfully (6,950 files, about 8.97 MB) and VS Code CLI reported successful installation into an isolated profile. The installed package passed native CRLF/Undo/reopen/later-edit/ripgrep checks (docs/vsix-native-results.json). The native fixture now focuses the editor and awaits its change event; checking the document immediately after global Undo was unreliable during host startup.
+
+Live setup discovered TrueForge 0.180.1 rejects loopback MCP registration by default: HTTP 400, Outbound URL blocked for host "127.0.0.1". README now documents the narrowly scoped OUTBOUND_URL_ALLOWED_HOSTS=["127.0.0.1"] server setting. Gemini model catalog authentication succeeded. The available OpenAI credential returned HTTP 401; a valid independent fallback provider has not been established. No credentials are committed.
