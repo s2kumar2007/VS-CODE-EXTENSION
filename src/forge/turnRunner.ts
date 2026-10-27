@@ -30,10 +30,11 @@ export async function runTurn(
   sessionId: string,
   input: TrueForgeApi.TurnInputItem[],
   handlers: TurnHandlers,
+  signal?: AbortSignal,
 ): Promise<TurnResult> {
   const events: TurnEvents = new Map();
   const result: TurnResult = { events, status: 'unknown', approvals: [] };
-  const stream = await client.sessions.createTurnStream(sessionId, { input });
+  const stream = await client.sessions.createTurnStream(sessionId, { input }, { abortSignal: signal, maxRetries: 0 });
 
   for await (const { data: event } of stream.withMetadata()) {
     if (isEventDelta(event)) {

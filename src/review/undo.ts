@@ -1,4 +1,4 @@
-export interface UndoEntry { path: string; before: string; after: string; label: string }
+export interface UndoEntry { path: string; before: string; after: string; label: string; created?: boolean }
 
 /** In-extension undo stack (native Ctrl+Z also works because edits go through WorkspaceEdit). */
 export class UndoStack {

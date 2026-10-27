@@ -7,6 +7,13 @@ export interface Hunk {
   added: string;       // text added in new ('' for pure deletion)
 }
 
+/** Preserve an existing file's line-ending convention without changing final-newline presence. */
+export function normalizeEol(oldText: string, proposed: string): string {
+  if (!oldText) return proposed;
+  const eol = oldText.includes('\r\n') ? '\r\n' : '\n';
+  return proposed.replace(/\r?\n/g, eol);
+}
+
 /** A diff is a sequence of unchanged runs and "hunks" (a removed+added pair, either may be empty). */
 type Segment = { kind: 'same'; text: string } | { kind: 'hunk'; hunk: Hunk };
 

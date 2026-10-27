@@ -70,3 +70,34 @@ describe('approval loop (propose_write)', () => {
     expect(d.status).toBe('deny');
   });
 });
+
+
+describe('concurrent and stale approvals', () => {
+  it('collects two write calls in one turn, then sends only approvals', async () => {
+    const { approvals, store }=setup([1]);
+    const tf=new FakeTrueForge({p:[()=>[
+      created(),toolMsg('m1','a','propose_write',{path:'f.txt',new_content:NEW}),
+      toolMsg('m2','b','propose_write',{path:'second.txt',new_content:'new'}),
+      approvalRequired('a','m1'),approvalRequired('b','m2'),done(),
+    ],()=>[created(),done()]]});
+    const ctl=new AgentController({getClient:()=>tf.client,approvals,agents:()=>({primary:'p'}),retries:0});
+    await ctl.run('two files',new RecordingUi());
+    expect(tf.inputs[1]).toHaveLength(2);
+    expect(tf.inputs[1]!.every(i=>i.type==='user.tool_approval')).toBe(true);
+    expect(store.size).toBe(0);
+  });
+  it('rejects a second request while review is open and clears permits after a failed resume', async () => {
+    const {root,store}=setup([1]);
+    let opened!:()=>void,release!:(ids:number[])=>void;
+    const ready=new Promise<void>(r=>opened=r);
+    const approvals=new ReviewApprovals({root,store,readText:async()=>OLD,ui:{
+      reviewHunks:()=>new Promise(r=>{release=r;opened();}),confirmCommand:async()=>false,close(){},
+    }});
+    const tf=new FakeTrueForge({p:[()=>[created(),toolMsg('m','tc','propose_write',{path:'f.txt',new_content:NEW}),approvalRequired('tc','m'),done()],()=>{throw Error('SSE drop');}]});
+    const ctl=new AgentController({getClient:()=>tf.client,approvals,agents:()=>({primary:'p'}),retries:0});
+    const running=ctl.run('first',new RecordingUi());await ready;
+    const second=new RecordingUi();await ctl.run('second',second);
+    expect(second.result?.message).toContain('already working');
+    release([1]);await running;expect(store.size).toBe(0);
+  });
+});

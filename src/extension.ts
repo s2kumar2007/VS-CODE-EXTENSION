@@ -35,7 +35,8 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
     getClient: () => createClient(getConfig().baseUrl),
     approvals,
     agents: () => ({ primary: getConfig().agentName, fallback: getConfig().fallbackAgentName }),
-    onCancel: () => store.clear(),
+    onRunStart: () => api?.beginRun(),
+    onCancel: () => { store.clear(); api?.cancelCommands(); },
   });
 
   ctx.subscriptions.push(

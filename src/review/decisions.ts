@@ -21,8 +21,16 @@ export function proposalKey(absPath: string, newContent: string): string {
  */
 export class DecisionStore {
   private map = new Map<string, ReviewDecision>();
+  private commands = new Map<string, number>();
   put(key: string, d: ReviewDecision): void { this.map.set(key, d); }
   take(key: string): ReviewDecision | undefined { const d = this.map.get(key); this.map.delete(key); return d; }
-  clear(): void { this.map.clear(); }
+  permitCommand(command: string): void { this.commands.set(command, (this.commands.get(command) ?? 0) + 1); }
+  takeCommand(command: string): boolean {
+    const count = this.commands.get(command) ?? 0;
+    if (!count) return false;
+    if (count === 1) this.commands.delete(command); else this.commands.set(command, count - 1);
+    return true;
+  }
+  clear(): void { this.map.clear(); this.commands.clear(); }
   get size(): number { return this.map.size; }
 }

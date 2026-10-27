@@ -28,3 +28,23 @@ Read https://trueforge.dev/llms.txt, api/use-agent.md, published openapi.json an
 Checkout verified: pallets/flask tag 3.1.3, HEAD 22d924701a6ae2e4cd01e9a15bbaf3946094af65. Development host opened with --extensionDevelopmentPath and Flask workspace. First launcher failed with exact dialog: `Uncaught Exception: Error: Windows: Unexpected undefined %USERPROFILE% environment variable at TU (file:///C:/Users/K/AppData/Local/Programs/Microsoft%20VS%20Code/e646868227/resources/app/out/mainImpl.js:7:843) at RU (.../mainImpl.js:7:692) at Ym (.../mainImpl.js:7:429) at .../mainImpl.js:195:6701 at ModuleJob.run (node:internal/modules/esm/module_job:561:25) at process.processTicksAndRejections (node:internal/process/task_queues:104:5) at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:647:26) at async .../main.js:27:62499`. Supplied USERPROFILE for launcher; host then opened.
 
 Observed activation warning: `Forge: TrueForge is not reachable. Start it with \`npx @truefoundry/trueforge@latest\`, then reload the window.` No extension crash; panel opens. Task A (get_debug_flag) and Task B (flask config, tests/docs, no file names) are BLOCKED pending a live backend/model; no successful model edits claimed. Task C unreachable activation is observed manually; bad-key and retry/fallback are automated fault tests, not a manual provider-key test. No provider credentials supplied or modified. Flask git status remains clean.
+
+## Phase 4 — safety
+
+Typecheck, 55 tests, build passed. No direct fs.writeFile/workspace.fs.writeFile in src. The only applyEdit sites are reviewed apply and explicit undo. Immutable segment assembly preserves offsets (equivalent to bottom-up application without mutating offsets). Approval decisions are single-use and cleared at attempt/run boundaries. Two-call and overlapping-request tests pass. Cancel before writes and during diff review leaves disposable git repositories clean. Previously approved/applied changes are not rolled back on Stop. New files are removed by Undo last; later edits prevent undo. Editor API tests use a VS Code mock; native undo-stack behavior still needs host validation.
+
+IMPORTANT LIMIT: run_command is an explicitly confirmed shell command with user permissions, not an OS sandbox. Obvious outside-path operands and symlinks are rejected, but programs, package scripts, and encoded shell code can still access outside paths or write files. Cancellation cannot roll back effects of an already approved command. Do not interpret the path preflight as a security boundary for arbitrary code.
+
+| ID | File and original line | Symptom / root cause | Fix | Regression |
+|---|---|---|---|---|
+| P4-1 | src/workspace/vscodeApi.ts:84 | command execution has no local approval gate | single-use exact command permits | editorSafety.test.ts; safety.test.ts |
+| P4-2 | src/workspace/runCommand.ts:23 | timeout kills shell only; Stop cannot kill child | AbortSignal, taskkill tree / POSIX process group | safety.test.ts real timeout and abort |
+| P4-3 | src/workspace/runCommand.ts:8 | character slicing exceeds UTF-8 byte cap and large chunks overallocate | byte-bounded head/tail collection | safety.test.ts emoji output |
+| P4-4 | src/review/approvals.ts:52 | late review can store approval after Stop | abort checks before/after UI; queued write checks signal | safety.test.ts; editorSafety.test.ts |
+| P4-5 | src/agent/controller.ts:65 | decisions survive failed run/attempt | clear at attempt and finally | controller.test.ts failed resume |
+| P4-6 | src/workspace/vscodeApi.ts:117 | new-file undo leaves empty file; refused undo still pops | record creation; delete on undo; check apply result | editorSafety.test.ts |
+| P4-7 | src/review/approvals.ts:45 | LF proposal against CRLF turns every line into change | normalize to existing EOL, preserve final-newline presence | safety.test.ts partial CRLF |
+| P4-8 | src/review/ReviewPanel.ts:84 | modal command prompt cannot be cancelled | abortable QuickPick | reviewPanel.test.ts |
+| P4-9 | src/workspace/paths.ts:44 | all realpath errors treated as absent; dangling links pass parent check | only ENOENT fallback; reject dangling symlinks | paths.test.ts |
+| P4-10 | src/workspace/runCommand.ts:20 | no outside-path command preflight | reject explicit traversal, absolute operands, outside symlinks | safety.test.ts; shell sandbox limitation above |
+| P4-11 | src/agent/controller.ts:89 | Stop during session creation can still start a turn | request AbortSignal and post-create cancellation check | cancel.test.ts; native network coverage pending |

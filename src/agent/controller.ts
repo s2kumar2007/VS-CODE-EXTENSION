@@ -12,6 +12,7 @@ export interface ControllerDeps {
   sleep?: (ms: number) => Promise<void>;
   /** Extra cleanup on cancel (e.g. discard queued proposals). */
   onCancel?: () => void;
+  onRunStart?: () => void;
 }
 
 const isWriteTool = (n: string) => /propose_write$/.test(n);
@@ -37,6 +38,7 @@ export class AgentController {
     this.cancelled = false;
     this.abort = new AbortController();
     this.approvedWrites = 0;
+    this.d.onRunStart?.();
     const cfg = this.d.agents();
     try {
       const outcome = await runWithFallback<'done' | 'cancelled'>({
@@ -58,6 +60,7 @@ export class AgentController {
         ui.finished({ status: 'error', message: `${base} ${this.approvedWrites ? `${this.approvedWrites} change(s) had already been applied; use "Forge: Undo last applied change" to revert.` : 'No changes were made to your workspace.'}` });
       }
     } finally {
+      this.d.approvals.cancelAll();
       this.running = false;
       this.sessionId = undefined;
     }
@@ -79,16 +82,18 @@ export class AgentController {
   }
 
   private async attempt(agent: string, request: string, ui: AgentUi): Promise<'done' | 'cancelled'> {
+    this.d.approvals.cancelAll();
     const client = this.d.getClient();
-    const { data: session } = await client.sessions.create({ agent: { name: agent } });
+    const { data: session } = await client.sessions.create({ agent: { name: agent } }, { abortSignal: this.abort.signal });
     this.sessionId = session.id;
+    if (this.cancelled) { await client.sessions.cancel(session.id, {}).catch(() => {}); return 'cancelled'; }
     let input: TrueForgeApi.TurnInputItem[] = [{ type: 'user.message', content: request }];
 
     for (let round = 0; round < 200; round++) {
       const res = await runTurn(client, session.id, input, {
         onTextDelta: (id, t) => ui.textDelta(id, t),
         onToolCall: (n) => ui.toolCall(n),
-      });
+      }, this.abort.signal);
       if (this.cancelled || res.status === 'cancelled') return 'cancelled';
       if (res.status === 'error') throw new Error(res.error ?? 'the turn ended with an error');
       if (res.status === 'paused') {

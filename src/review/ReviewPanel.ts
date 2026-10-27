@@ -13,6 +13,7 @@ type FromWebview = { type: 'toggle'; id: number; accepted: boolean } | { type: '
  */
 export class ReviewPanel implements ReviewUi {
   private panel: vscode.WebviewPanel | undefined;
+  private dismissCommand: (() => void) | undefined;
   private settle: ((accepted: number[]) => void) | undefined;
 
   constructor(private ctx: vscode.ExtensionContext, private provider: ProposalProvider, private root: string) {}
@@ -62,12 +63,34 @@ export class ReviewPanel implements ReviewUi {
     });
   }
 
-  async confirmCommand(command: string): Promise<boolean> {
-    return (await vscode.window.showWarningMessage(`Forge wants to run a command:\n\n${command}`, { modal: true }, 'Run')) === 'Run';
+  confirmCommand(command: string, signal: AbortSignal): Promise<boolean> {
+    if (signal.aborted) return Promise.resolve(false);
+    return new Promise(resolve => {
+      const picker = vscode.window.createQuickPick();
+      picker.title = 'Forge: approve shell command (runs with your user permissions)';
+      picker.placeholder = command;
+      picker.items = [{ label: 'Cancel' }, { label: 'Run', description: command }];
+      let finished = false;
+      const finish = (allow: boolean) => {
+        if (finished) return;
+        finished = true;
+        signal.removeEventListener('abort', abort);
+        this.dismissCommand = undefined;
+        picker.dispose();
+        resolve(allow && !signal.aborted);
+      };
+      const abort = () => finish(false);
+      this.dismissCommand = abort;
+      signal.addEventListener('abort', abort, { once: true });
+      picker.onDidAccept(() => finish(picker.selectedItems[0]?.label === 'Run'));
+      picker.onDidHide(abort);
+      picker.show();
+    });
   }
 
   /** Cancel path: resolves any pending review as "nothing accepted" and removes all review UI. */
   close(): void {
+    this.dismissCommand?.();
     this.settle?.([]);
     this.panel?.dispose();
     this.panel = undefined;

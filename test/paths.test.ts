@@ -30,3 +30,14 @@ describe('resolveInsideReal (symlinks)', () => {
     await expect(resolveInsideReal(dir, 'new/dir/file.txt')).resolves.toBe(path.join(dir, 'new/dir/file.txt'));
   });
 });
+
+
+describe('fail closed symlink resolution', () => {
+  it('rejects a dangling directory junction instead of trusting its parent', async () => {
+    const dir=fs.mkdtempSync(path.join(os.tmpdir(),'dangling-'));
+    const outside=fs.mkdtempSync(path.join(os.tmpdir(),'dangling-target-'));
+    fs.symlinkSync(outside,path.join(dir,'link'),process.platform==='win32'?'junction':'dir');
+    fs.rmdirSync(outside);
+    await expect(resolveInsideReal(dir,'link/new.txt')).rejects.toThrow(PathError);
+  });
+});

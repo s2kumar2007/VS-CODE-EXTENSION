@@ -36,6 +36,9 @@ export async function resolveInsideReal(root: string, p: string): Promise<string
       return abs;
     } catch (e) {
       if (e instanceof PathError) throw e;
+      if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e;
+      const entry = await fs.lstat(probe).catch((err: NodeJS.ErrnoException) => { if (err.code !== 'ENOENT') throw err; return undefined; });
+      if (entry?.isSymbolicLink()) throw new PathError('dangling symlink is not safe: ' + p);
       const parent = path.dirname(probe);
       if (parent === probe) return abs; // reached filesystem root without finding anything
       probe = parent; // file does not exist yet (new file): check its parent instead

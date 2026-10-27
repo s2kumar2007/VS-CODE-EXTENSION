@@ -1,7 +1,8 @@
 import type { ApprovalDecision, ApprovalHandler, ToolCallInfo } from '../agent/types';
-import { computeHunks, type Hunk } from './hunks';
+import { computeHunks, normalizeEol, type Hunk } from './hunks';
 import { DecisionStore, proposalKey } from './decisions';
 import { PathError, resolveInsideReal, toRel } from '../workspace/paths';
+import { validateCommandPaths } from '../workspace/runCommand';
 
 export interface ReviewRequest { relPath: string; rationale: string; oldText: string; newText: string; hunks: Hunk[]; isNew: boolean }
 
@@ -21,13 +22,18 @@ export class ReviewApprovals implements ApprovalHandler {
   cancelAll(): void { this.d.store.clear(); this.d.ui.close(); }
 
   async decide(call: ToolCallInfo, signal: AbortSignal): Promise<ApprovalDecision> {
+    if (signal.aborted) return { status: 'deny', reason: 'Cancelled.' };
     if (is(call.name, 'propose_write')) return this.decideWrite(call, signal);
     if (is(call.name, 'run_command')) {
       const cmd = String(call.args.command ?? '');
       if (!cmd) return { status: 'deny', reason: 'Empty command.' };
-      return (await this.d.ui.confirmCommand(cmd, signal)) ? { status: 'allow' } : { status: 'deny', reason: 'The user declined to run this command.' };
+      try { await validateCommandPaths(this.d.root, cmd); } catch { return { status: 'deny', reason: 'Command references a path outside the workspace.' }; }
+      const confirmed = await this.d.ui.confirmCommand(cmd, signal);
+      if (!confirmed || signal.aborted) return { status: 'deny', reason: 'The command was declined or cancelled.' };
+      this.d.store.permitCommand(cmd);
+      return { status: 'allow' };
     }
-    return { status: 'allow' };
+    return { status: 'deny', reason: 'Unknown approval tool.' };
   }
 
   private async decideWrite(call: ToolCallInfo, signal: AbortSignal): Promise<ApprovalDecision> {
@@ -39,14 +45,16 @@ export class ReviewApprovals implements ApprovalHandler {
 
     const existing = await this.d.readText(abs);
     const oldText = existing ?? '';
-    const hunks = computeHunks(oldText, new_content);
+    const reviewedText = normalizeEol(oldText, new_content);
+    const hunks = computeHunks(oldText, reviewedText);
     if (hunks.length === 0) return { status: 'deny', reason: 'The proposed content is identical to the current file; nothing to change.' };
 
-    const accepted = await this.d.ui.reviewHunks({ relPath: toRel(this.d.root, abs), rationale: String(rationale ?? ''), oldText, newText: new_content, hunks, isNew: existing === undefined }, signal);
+    const accepted = await this.d.ui.reviewHunks({ relPath: toRel(this.d.root, abs), rationale: String(rationale ?? ''), oldText, newText: reviewedText, hunks, isNew: existing === undefined }, signal);
+    if (signal.aborted) return { status: 'deny', reason: 'Cancelled.' };
     if (accepted.length === 0) return { status: 'deny', reason: 'The user rejected all hunks.' };
 
     // The MCP handler looks this up when TrueForge executes the (now allowed) call.
-    this.d.store.put(proposalKey(abs, new_content), { baseText: oldText, newText: new_content, acceptedHunks: accepted, totalHunks: hunks.length });
+    this.d.store.put(proposalKey(abs, new_content), { baseText: oldText, newText: reviewedText, acceptedHunks: accepted, totalHunks: hunks.length });
     return { status: 'allow' };
   }
 }
