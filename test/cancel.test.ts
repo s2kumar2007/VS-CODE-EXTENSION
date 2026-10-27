@@ -40,9 +40,11 @@ describe('cancellation (stage 6)', () => {
   it('cancel while a diff review is pending: review aborted, no approval sent, nothing queued, git clean', async () => {
     const { root, gitStatus } = tempRepo();
     let reviewSignal!: AbortSignal;
+    let opened!: () => void;
+    const reviewOpened = new Promise<void>(resolve => { opened = resolve; });
     let closed = 0;
     const reviewUi: ReviewUi = {
-      reviewHunks: (_req, signal) => new Promise<number[]>((resolve) => { reviewSignal = signal; signal.addEventListener('abort', () => resolve([])); }),
+      reviewHunks: (_req, signal) => new Promise<number[]>((resolve) => { reviewSignal = signal; opened(); signal.addEventListener('abort', () => resolve([])); }),
       confirmCommand: async () => false,
       close: () => { closed++; },
     };
@@ -53,7 +55,7 @@ describe('cancellation (stage 6)', () => {
     const ui = new RecordingUi();
 
     const run = ctl.run('edit f', ui);
-    await new Promise((r) => setTimeout(r, 30)); // review is now open
+    await reviewOpened;
     expect(reviewSignal.aborted).toBe(false);
     await ctl.cancel();
     await run;

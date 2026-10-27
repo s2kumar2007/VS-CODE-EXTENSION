@@ -26,7 +26,7 @@ describe('approval loop (propose_write)', () => {
     const { root, file, store, approvals } = setup([1]); // accept hunk 1 (b->B), reject hunk 2 (f->F)
     const tf = new FakeTrueForge({
       'forge-agent': [
-        () => [created(), delta('m1', 'Planning... '), toolMsg('m1', 'tc1', 'propose_write', { path: 'f.txt', new_content: NEW, rationale: 'r' }), approvalRequired('tc1', 'm1')],
+        () => [created(), delta('m1', 'Planning... '), toolMsg('m1', 'tc1', 'propose_write', { path: 'f.txt', new_content: NEW, rationale: 'r' }), approvalRequired('tc1', 'm1'), done()],
         (input) => {
           // This is what the MCP propose_write handler does once TrueForge executes the allowed call.
           const d = store.take(proposalKey(file, NEW));

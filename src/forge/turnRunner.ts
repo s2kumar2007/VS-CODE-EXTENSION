@@ -57,14 +57,13 @@ export async function runTurn(
       case 'tool.approval_required':
         for (const ref of event.toolCalls) {
           // The ref only has ids; the thread comes from the model message that issued the call.
-          const src = events.get(ref.sourceEventId);
-          const threadId = src && 'threadId' in src && typeof src.threadId === 'string' ? src.threadId : event.threadId;
+          const threadId = event.threadId;
           result.approvals.push({ toolCallId: ref.id, threadId, sourceEventId: ref.sourceEventId });
         }
         result.status = 'paused';
         break;
       case 'turn.done':
-        result.status = event.state.status;
+        result.status = event.state.status === 'done' && result.approvals.length > 0 ? 'paused' : event.state.status;
         if (event.state.status === 'error') result.error = event.state.message;
         break;
       default:

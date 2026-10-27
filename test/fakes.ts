@@ -39,7 +39,7 @@ export class FakeTrueForge {
 let c = 0;
 const id = () => `e${++c}`;
 export const created = () => ({ type: 'turn.created', id: id(), createdAt: 'x' });
-export const done = (status: 'done' | 'cancelled' = 'done') => ({ type: 'turn.done', id: id(), threadId: null, createdAt: 'x', state: { status } });
+export const done = (status: 'done' | 'cancelled' = 'done') => ({ type: 'turn.done', id: id(), threadId: null, createdAt: 'x', state: { status, ...(status === 'done' ? { completedAt: 'x', output: null, requiredActions: [] } : {}) } });
 export const errorDone = (message: string) => ({ type: 'turn.done', id: id(), threadId: null, createdAt: 'x', state: { status: 'error', message } });
 export const delta = (msgId: string, content: string) => ({ type: 'model.message.delta', id: msgId, threadId: 'main', content });
 export const toolMsg = (msgId: string, callId: string, name: string, args: object) => ({
