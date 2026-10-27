@@ -72,7 +72,8 @@ export async function assembleContext(request: string, deps: ContextDeps, budget
   const score = new Map<string, number>();
   const why = new Map<string, string[]>();
   const hitLines = new Map<string, number[]>();
-  const bump = (f: string, n: number, reason: string) => { score.set(f, (score.get(f) ?? 0) + n); why.set(f, [...(why.get(f) ?? []), reason]); };
+  // `front` puts structural reasons (imports) ahead of the many keyword-hit reasons so they survive the display cap.
+  const bump = (f: string, n: number, reason: string, front = false) => { score.set(f, (score.get(f) ?? 0) + n); why.set(f, front ? [reason, ...(why.get(f) ?? [])] : [...(why.get(f) ?? []), reason]); };
 
   const perKeyword = await Promise.all(keywords.map(async (k) => [k, await deps.searchKeyword(k)] as const));
   for (const [k, hits] of perKeyword) {
@@ -104,7 +105,7 @@ export async function assembleContext(request: string, deps: ContextDeps, budget
   for (const f of [...score.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([x]) => x)) {
     const mod = f.replace(/\.[^.]+$/, '').split('/').pop()!;
     if (mod.length < 3 || mod === '__init__') continue;
-    for (const h of await deps.searchImporters(mod)) if (h.path !== f) bump(h.path, 1.5, `imports ${mod}`);
+    for (const h of await deps.searchImporters(mod)) if (h.path !== f) bump(h.path, 1.5, `imports ${mod}`, true);
   }
 
   const ranked = [...score.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 12);
