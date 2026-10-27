@@ -77,6 +77,6 @@ Unit/integration checks do not need model keys. The audit includes a real Window
 
 Windows, macOS and Linux CI passed for commit 3236dac (docs/ci-results.json). Native editor UI tests remain Windows-only. The ripgrep platform binary must be installed as an optional dependency; build/package a VSIX on its target platform. A universal VSIX is not supplied.
 
-Live Task C passed against an invalid key with retries and a fresh working fallback session; the checkout remained clean. Tasks A/B remain under live validation and have encountered provider quotas. See docs/LIVE_TESTS.md for the automated harness scope and docs/AUDIT.md for exact results.
+A live greeting-based bad-key probe demonstrated retries and a fresh fallback session with a clean checkout. The official fixed Task C instead repeats the inline request; the corrected harness has not yet verified that exact case. Tasks A/B remain under live validation and have encountered provider quotas. See docs/LIVE_TESTS.md for the automated harness scope and docs/AUDIT.md for exact results.
 
 License: MIT
