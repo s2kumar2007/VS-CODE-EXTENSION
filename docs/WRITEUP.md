@@ -24,14 +24,9 @@ The default 6000-token limit is a chars/4 estimate of the rendered CONTEXT block
 
 ## 5. Model setup
 
-Verified example identifiers on 27 October 2026:
+The local account now has Google configured with model aliases gemini-3-5-flash and gemini-2-5-flash. The primary uses google-gemini/gemini-3-5-flash; inline and fallback use google-gemini/gemini-2-5-flash. The same provider credential supports both models, so this configuration covers model failures but not a Google-wide outage. A valid independent-provider credential was not available.
 
-| Role | TrueForge agent reference | Provider model_id |
-|---|---|---|
-| Primary/inline | google-gemini/gemini-3-8-flash | gemini-3.8-flash |
-| Fallback | groq/gpt-oss-120b | openai/gpt-oss-120b |
-
-Configure Google Gemini and a custom OpenAI-compatible provider named groq in TrueForge. Model configured names are aliases, distinct from provider model_id values. Groq base URL: https://api.groq.com/openai/v1. Keys belong only in TrueForge Settings. See README for current provider references. The audited server returned an empty models list; no real model invocation or provider cost was measured. Cost is unknown, not zero.
+Generation succeeded on both configured models. Gemini 3.8 was listed but returned HTTP 503; tool turns also encountered Google's five-requests/minute free-tier quota. The live invalid-key test used a disposable OpenAI-compatible provider, retried twice, and completed through a fresh Gemini 2.5 fallback session (docs/live-C.json and docs/live-C-sessions.json). No credentials are committed. Provider cost remains unknown, not zero. See docs/LIVE_TESTS.md for exact automated live-test scope.
 
 ## 6. Scorecard
 
@@ -39,13 +34,13 @@ Configure Google Gemini and a custom OpenAI-compatible provider named groq in Tr
 |---|---|---|
 | Clean clone / npm ci | Passed | docs/AUDIT.md phase 8 |
 | Typecheck / unit suite / build | Passed | audit phase records |
-| A inline get_debug_flag | Blocked: no configured provider | Flask commit verified; native host opens |
-| B flask config, >=3 files | Blocked: no configured provider | No successful multi-file model edit claimed |
-| C bad key / bad endpoint | Automated fault tests pass; manual offline activation observed | resilience.test.ts, contract.test.ts, audit phase 3 |
+| A inline get_debug_flag | Live attempts reached provider; quota-limited before approval | docs/live-A-provider-503.json; docs/live-A-provider-429.json |
+| B flask config, >=3 files | Live validation pending | Baseline 58 CLI tests pass; no model edit claimed |
+| C bad key / bad endpoint | Real bad-key retry/fallback passed; offline activation and injected endpoint faults covered separately | docs/live-C.json; docs/live-C-sessions.json; resilience.test.ts |
 | Native Windows review-edit undo | Passed | docs/native-host-results.json |
 | Windows / macOS / Linux CI | Passed for commit 3236dac | docs/ci-results.json; GitHub run 40505578815 |
 
-Task A/B execution times, live tokens, provider costs and model-generated Flask changes are not available. No fabricated success or stack traces. Exact observed launch failure and activation message are in the audit. The rubric evidence mapping is in docs/RUBRIC.md; official label definitions were not supplied.
+Completed live Task C timestamps and session metrics are recorded. No successful Task A/B edits or provider costs are claimed; no provider stack trace is invented. Exact observed launch failure and activation message are in the audit. The rubric evidence mapping is in docs/RUBRIC.md; official label definitions were not supplied.
 
 ## 7. Tools used
 
@@ -53,11 +48,11 @@ TrueForge 0.180.1, TS SDK 0.180.0, VS Code native extension test host, MCP SDK, 
 
 ## 8. Known limitations
 
-- Full live Tasks A/B and provider-key Task C still require configured models and account entitlement. Dynamic subagents are enabled in manifests, not verified in a model-backed run.
+- Live Task C passed. Tasks A/B remain subject to the account free-tier quotas; the evidence distinguishes failures from successful edits. Dynamic subagents are enabled, not claimed as observed without event evidence.
 - run_command executes with user permissions. Path preflight catches explicit escapes but cannot sandbox arbitrary code or guarantee outside files are untouched. Approved command effects cannot be rolled back.
 - Before approval, failures use exponential retries then fallback in a fresh session. After any write/command approval, replay stops to prevent duplication; uncertain effects are reported. Failure/Stop can retain already approved changes.
 - One folder and one active request. Each user request creates a fresh session; approval resumes reuse it. The shared forge-editor registration does not isolate multiple windows on one server.
 - Undo history is in memory for 50 changes and does not survive extension reload. It refuses later text changes rather than merging an inverse patch. New file undo is supported; directory cleanup is not automatic.
 - Line-based diffs, complete proposed file content, regex symbol fallback and a chars/4 context estimate. CRLF normalization retains the existing convention; mixed-EOL fidelity is not promised.
 - Remote/OIDC auth is not configured. The local MCP bearer token protects the endpoint; it is not an OS sandbox. Symlink checks cannot eliminate races with other processes changing the filesystem concurrently.
-- macOS/Linux native execution and packaged VSIX install remain unverified; package on each target platform with optional ripgrep dependencies. No universal VSIX is delivered.
+- Three-OS Node CI and Windows packaged VSIX installation/native editor checks passed. macOS/Linux native UI execution remains unverified. Package on each target platform with its optional ripgrep binary; no universal VSIX is delivered.

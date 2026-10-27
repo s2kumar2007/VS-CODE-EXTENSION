@@ -3,7 +3,7 @@
   "description": "Forge inline-edit agent: rewrites one selection via propose_write.",
   "manifest": {
     "model": {
-      "name": "google-gemini/gemini-3-8-flash",
+      "name": "google-gemini/gemini-2-5-flash",
       "params": {
         "temperature": 0.2
       }

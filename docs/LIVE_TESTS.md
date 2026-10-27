@@ -1,0 +1,24 @@
+# Opt-in live checks
+
+These checks use real TrueForge/provider requests and native VS Code WorkspaceEdit operations. They are automated integration evidence, not a manual demo of the chat/input/review UI. Only Task A's helpers.py or Task B's cli.py, test_cli.py and cli.rst proposals are programmatically accepted; all agent shell commands are declined. Independent Python checks and pytest run afterward. Native visual review and undo mechanics are covered separately.
+
+Start TrueForge with the explicit 127.0.0.1 outbound allowlist from README, and configure a provider/model. Use a clean disposable Flask checkout at 22d924701a6ae2e4cd01e9a15bbaf3946094af65 for each task. Install Python dependencies separately. Never pass provider secrets on the command line.
+
+From the extension root, after npm ci and npm run build:
+
+    node scripts/run-live-tests.cjs A <disposable-Flask-A> google-gemini/gemini-3-5-flash <absolute-Code.exe> <absolute-result-A.json>
+    node scripts/run-live-tests.cjs B <disposable-Flask-B> google-gemini/gemini-3-5-flash <absolute-Code.exe> <absolute-result-B.json>
+
+Run sequentially: the forge-editor registration is shared by name. The runner creates an isolated development-extension descriptor with a no-op activation entrypoint so normal startup cannot replace the harness MCP registration or model aliases. The bundled harness imports the real controller, MCP server/tools, context assembler, review-approval handler and editor API from src. It records the effective model and extension path. This deliberately does not test normal extension activation; the installed-VSIX native evidence covers packaging/editor integration separately.
+
+For each edited checkout, set PYTHONPATH to that checkout's src directory and run:
+
+    python <extension-repo>/scripts/verify-flask-demo.py A
+    python <extension-repo>/scripts/verify-flask-demo.py B
+    python -m pytest tests/test_cli.py -q
+
+The A check covers unset/empty/0/false/no/off/n, case variants, true values and docstring values. The B check covers help registration, parseable JSON, four secret categories, preserved ordinary values and no mutation of the app configuration. Inspect git diff and require at least three intended files for B.
+
+Task C uses a separately named forge-audit-invalid provider/agent pointing at an intentionally invalid OpenAI credential or unreachable endpoint; it never replaces the real Gemini provider credential. Configure the disposable agent before running C. The harness uses that agent as primary and forge-agent on the selected working model as fallback. Record raw turn.done error events and session IDs, backoff notices and a clean git status. Remove the disposable agent before deleting its provider afterward.
+
+Provider availability is not established by listing model IDs: require a successful generate request. Observed in this audit: Gemini 3.8 generation returned HTTP 503; the account's free tier returned HTTP 429 with a five-requests/minute limit during tool turns. Failures and incomplete tasks remain failures in the evidence. Do not invent model costs or a JavaScript stack trace when only a provider error event exists.

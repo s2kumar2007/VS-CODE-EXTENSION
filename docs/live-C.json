@@ -1,0 +1,35 @@
+{
+  "task": "C",
+  "model": "google-gemini/gemini-2-5-flash",
+  "extensionPath": "C:\\Users\\K\\AppData\\Local\\Temp\\forge-live-extension-isolated",
+  "mode": "automated native host, real provider, scoped programmatic hunk review",
+  "started": "2026-10-27T16:59:10.980Z",
+  "reviews": [],
+  "commands": [],
+  "notices": [
+    {
+      "time": 1793120352386,
+      "text": "Request to \"forge-audit-invalid\" failed, retrying (1)..."
+    },
+    {
+      "time": 1793120353973,
+      "text": "Request to \"forge-audit-invalid\" failed, retrying (2)..."
+    },
+    {
+      "time": 1793120356626,
+      "text": "Primary model failed, using fallback"
+    }
+  ],
+  "tools": [],
+  "text": "Hello!",
+  "stage": "running controller",
+  "effectiveModels": [
+    "google-gemini/gemini-2-5-flash",
+    "google-gemini/gemini-2-5-flash"
+  ],
+  "prompt": "Reply with a short greeting. Do not edit files or run commands.",
+  "finished": {
+    "status": "done"
+  },
+  "ended": "2026-10-27T16:59:18.485Z"
+}

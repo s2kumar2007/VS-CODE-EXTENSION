@@ -23,23 +23,25 @@ Requires Node 22.14+ (validated with Node 24), VS Code 1.90+, git, and Python fo
    macOS/Linux: `OUTBOUND_URL_ALLOWED_HOSTS='["127.0.0.1"]' npx @truefoundry/trueforge@latest`. This explicit host allowlist is required by TrueForge 0.180.1 for the loopback editor MCP URL.
 
    UI: http://localhost:8790. Local API docs: http://localhost:8790/api/v1/docs, schema: /api/v1/openapi.json. Tested CLI version: 0.180.1, SDK: 0.180.0. This extension assumes local no-auth TrueForge; authenticated remote hosting is not configured here.
-4. Configure the two providers below in TrueForge Settings, including your own keys. The server starts with NO configured models. Never put keys in this repository or VS Code settings.
+4. Configure the two model aliases below on your Google provider in TrueForge Settings, using your own key. A fresh server starts with no configured models. Never put keys in this repository or VS Code settings.
 5. Run code . in the extension repository, press F5 (Run Extension), then open your disposable Flask checkout in the development host. Alternatively:
 
     code --new-window --extensionDevelopmentPath="<absolute extension repo>" "<absolute Flask checkout>"
 
 Activation starts a loopback MCP server, registers its bearer header in TrueForge and syncs agents/*.json. If setup fails, a non-blocking warning appears; sending a request retries setup. Reload after changing agent JSON or server model configuration that was already synchronized.
 
-## Models (verified 27 October 2026)
+## Models (account-verified 27 October 2026)
 
-TrueForge agent names use provider/configured-model-name, which is different from the provider's model_id. Enter these exact configured names or update agents/*.json to match your own choices.
+The current local account uses one Google provider with two configured model aliases. Model names in agents/*.json must match TrueForge Settings.
 
-| Role | Provider name/type | Configured model name | Provider model_id |
-|---|---|---|---|
-| Primary / inline | google-gemini | gemini-3-8-flash | gemini-3.8-flash |
-| Fallback | groq / custom OpenAI-compatible | gpt-oss-120b | openai/gpt-oss-120b |
+| Role | TrueForge agent reference | Provider model_id |
+|---|---|---|
+| Primary | google-gemini/gemini-3-5-flash | gemini-3.5-flash |
+| Inline / fallback | google-gemini/gemini-2-5-flash | gemini-2.5-flash |
 
-Groq base URL: https://api.groq.com/openai/v1. Agent references: google-gemini/gemini-3-8-flash and groq/gpt-oss-120b. Provider availability and account entitlement still require a real request. Gemini 2.5 access is limited to previously active users; Llama 3.3 70B is no longer a general free/developer-tier fallback. References: [Google models](https://ai.google.dev/gemini-api/docs/models), [Groq deprecations](https://console.groq.com/docs/deprecations), [TrueForge setup](https://trueforge.dev/models.md). config.example.json is an illustrative checklist, not an importable TrueForge manifest.
+Both models accepted actual generation requests with the available account. The live bad-key test recovered from an invalid OpenAI-compatible provider to Gemini 2.5. Primary and normal fallback share Google, so this setup does not isolate a provider-wide outage. Google free-tier quotas apply separately to model requests and blocked longer tool turns during this audit. Gemini 2.5 access can be account-restricted: verify your own account before copying these defaults.
+
+The former primary gemini-3.8-flash was listed but returned HTTP 503 during generation. The available OpenAI credential returned HTTP 401. No working Groq credential was supplied, so the defaults no longer require an unavailable Groq provider. For independent-provider resilience, configure your own valid second provider and update forge-agent-fallback.json. Never put keys in this repository. config.example.json is an illustrative checklist, not an importable TrueForge manifest.
 
 ## Usage
 
@@ -75,6 +77,6 @@ Unit/integration checks do not need model keys. The audit includes a real Window
 
 Windows, macOS and Linux CI passed for commit 3236dac (docs/ci-results.json). Native editor UI tests remain Windows-only. The ripgrep platform binary must be installed as an optional dependency; build/package a VSIX on its target platform. A universal VSIX is not supplied.
 
-Live model-backed Task A and Task B are NOT yet passed: the audited TrueForge server has no configured providers. Task C has automated fault coverage and manually observed offline-activation behavior, not a verified live bad-key provider run. Full reproduction status is recorded honestly in the audit.
+Live Task C passed against an invalid key with retries and a fresh working fallback session; the checkout remained clean. Tasks A/B remain under live validation and have encountered provider quotas. See docs/LIVE_TESTS.md for the automated harness scope and docs/AUDIT.md for exact results.
 
 License: MIT

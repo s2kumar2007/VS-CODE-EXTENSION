@@ -1,26 +1,23 @@
 {
-  "_comment": "Placeholders only. Real keys are entered in TrueForge Settings, never in this repo.",
+  "_comment": "Placeholders only. Add both models to the same Google provider. This is a checklist, not an importable manifest.",
   "forge.baseUrl": "http://localhost:8790",
   "forge.agentName": "forge-agent",
   "forge.fallbackAgentName": "forge-agent-fallback",
-  "trueforgeModelProviders": {
-    "primary": {
-      "type": "google-gemini",
-      "auth": {
-        "api_key": "<YOUR_GEMINI_KEY>"
-      },
-      "model": "gemini-3.8-flash",
-      "name": "gemini-3-8-flash"
+  "trueforgeModelProvider": {
+    "type": "google-gemini",
+    "auth": {
+      "api_key": "<YOUR_GEMINI_KEY>"
     },
-    "fallback": {
-      "type": "custom",
-      "name": "groq",
-      "base_url": "https://api.groq.com/openai/v1",
-      "auth": {
-        "api_key": "<YOUR_GROQ_KEY>"
+    "models": [
+      {
+        "name": "gemini-3-5-flash",
+        "model_id": "gemini-3.5-flash"
       },
-      "model": "openai/gpt-oss-120b",
-      "model_name": "gpt-oss-120b"
-    }
-  }
+      {
+        "name": "gemini-2-5-flash",
+        "model_id": "gemini-2.5-flash"
+      }
+    ]
+  },
+  "limitation": "Both models share one provider; use a valid independent provider for outage isolation."
 }

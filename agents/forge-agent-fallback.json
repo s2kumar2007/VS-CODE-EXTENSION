@@ -1,9 +1,9 @@
 {
   "name": "forge-agent-fallback",
-  "description": "Fallback Forge agent on a different provider (Groq via custom OpenAI-compatible provider).",
+  "description": "Fallback Forge model on the configured Google provider; model-level recovery, not provider outage isolation.",
   "manifest": {
     "model": {
-      "name": "groq/gpt-oss-120b",
+      "name": "google-gemini/gemini-2-5-flash",
       "params": {
         "temperature": 0.2
       }
