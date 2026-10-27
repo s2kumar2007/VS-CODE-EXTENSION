@@ -4,6 +4,10 @@ import { startEditorMcpServer, type EditorMcpServer } from './mcp/server';
 import { createClient, registerMcpServer } from './forge/client';
 import { loadAgentFiles, syncAgents } from './forge/agents';
 import { ChatPanel } from './panel/ChatPanel';
+import { registerEditorTools } from './mcp/tools';
+import { findRg, VsCodeEditorApi } from './workspace/vscodeApi';
+import { DecisionStore } from './review/decisions';
+import { UndoStack } from './review/undo';
 
 let mcp: EditorMcpServer | undefined;
 
@@ -20,7 +24,10 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
 
 async function bootstrap(ctx: vscode.ExtensionContext, getClient: () => ReturnType<typeof createClient>): Promise<void> {
   try {
-    mcp = await startEditorMcpServer(() => { /* tools are added in stage 2 */ });
+    const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    if (!root) throw new Error('Open a folder first');
+    const api = new VsCodeEditorApi(root, findRg(ctx.extensionUri.fsPath), new DecisionStore(), new UndoStack());
+    mcp = await startEditorMcpServer((server) => registerEditorTools(server, api));
     const client = getClient();
     await registerMcpServer(client, mcp.url, mcp.token);
     const agents = await loadAgentFiles(vscode.Uri.joinPath(ctx.extensionUri, 'agents').fsPath);
