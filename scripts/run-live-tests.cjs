@@ -38,7 +38,13 @@ if (!['A','B','C'].includes(task) || !workspace || !model || !codeExe || !result
   child.on('exit',async code=>{
     try {
       const evidence = JSON.parse(await fs.readFile(path.resolve(result),'utf8'));
-      if (code || evidence.finished?.status !== 'done') throw new Error('Live task did not complete: '+JSON.stringify(evidence.finished || evidence.error));
+      const status = evidence.finished?.status;
+      if (code || (task === 'C' ? !['done','error'].includes(status) : status !== 'done')) throw new Error('Live task did not complete: '+JSON.stringify(evidence.finished || evidence.error));
+      if (task === 'C') {
+        if (!evidence.prompt?.startsWith('Inline edit request.')) throw new Error('Task C must repeat the inline request');
+        if (status === 'error' && (!evidence.finished.message || /\n\s+at\s/.test(evidence.finished.message))) throw new Error('Task C must show a clear stack-free error');
+        if (execFileSync('git',['-C',root,'status','--porcelain'],{encoding:'utf8',windowsHide:true}).trim()) throw new Error('Task C changed the checkout');
+      }
       const changed = new Set(evidence.reviews.filter(r=>r.allowed).map(r=>r.path));
       if (task === 'A' && !changed.has('src/flask/helpers.py')) throw new Error('Inline proposal was not reviewed');
       if (task === 'B' && changed.size < 3) throw new Error('Fewer than three reviewed files');

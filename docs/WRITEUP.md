@@ -30,17 +30,19 @@ Generation succeeded on both configured models. Gemini 3.8 was listed but return
 
 ## 6. Scorecard
 
-| Check | Observed result | Evidence |
-|---|---|---|
-| Clean clone / npm ci | Passed | docs/AUDIT.md phase 8 |
-| Typecheck / unit suite / build | Passed | audit phase records |
-| A inline get_debug_flag | Live attempt failed: daily quota exhausted before approval | docs/live-A-retry-aware.json; exact errors in live-A-retry-sessions.json |
-| B flask config, >=3 files | Live attempt failed: daily quota exhausted before approval | docs/live-B-retry-aware.json; baseline 58 CLI tests passed |
-| C bad key / bad endpoint | Real bad-key retry/fallback passed; offline activation and injected endpoint faults covered separately | docs/live-C.json; docs/live-C-sessions.json; resilience.test.ts |
-| Native Windows review-edit undo | Passed | docs/native-host-results.json |
-| Windows / macOS / Linux CI | Passed for commit 3236dac | docs/ci-results.json; GitHub run 40505578815 |
+Official weights and definitions are sourced in docs/official-rubric.json and docs/RUBRIC.md. No judge score is claimed. Video timestamps are unavailable until the required recording exists.
 
-Completed live Task C timestamps and session metrics are recorded. No successful Task A/B edits or provider costs are claimed; no provider stack trace is invented. Exact observed launch failure and activation message are in the audit. The rubric evidence mapping is in docs/RUBRIC.md; official label definitions were not supplied.
+| Criterion | Maximum | Video timestamp | Evidence / honest claim |
+|---|---:|---|---|
+| A1 Inline edit | 10 | Not recorded | Live A blocked by daily quota; native mechanisms pass. |
+| A2 Agent mode | 10 | Not recorded | Live B blocked by daily quota. |
+| A3 Streaming and cancellation | 10 | Not recorded | Automated tests pass; required video not recorded. |
+| B1 Context assembly | 15 | Not recorded | Budget/retrieval tests pass; live trace selects 22 items within 6000 estimated tokens. |
+| B2 Diff safety | 10 | Not recorded | Installed native tests pass; video not recorded. |
+| B3 Resilience | 10 | Not recorded | Earlier greeting probe demonstrates fallback only; exact Task C rerun pending. |
+| B4 TrueForge integration depth | 10 | Not recorded | Wire/MCP tests pass. Subagent/compaction flags alone do not establish top-anchor behavior. |
+| C1 Video | 10 | Not recorded | Video not supplied; no credit claimed. |
+| C2 Write-up | 15 | Not recorded | Markdown draft exists; team institution, final PDF and video timestamps remain unconfirmed. |
 
 ## 7. Tools used
 

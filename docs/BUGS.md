@@ -44,3 +44,6 @@ Original line numbers refer to audited base commit 4ca90c9. Each defect was repo
 
 | P9-5 | src/agent/resilience.ts | 62 | quota recovery retries before provider wait expires | fixed backoff ignores retry hint | honor 429 retry text up to 60 seconds; Stop cancels waiting | test/resilience.test.ts quota window, cap and cancellation |
 | P9-6 | .vscodeignore | 1 | VSIX ships thousands of already bundled dependency files | package exclusions omit node_modules | exclude bundled modules, retain platform ripgrep | scripts/verify-vsix.py and installed activation/native tests |
+
+| P10-1 | docs/RUBRIC.md | 5 | evidence assigned to wrong official criterion labels | mapping was provisional without the organizer PDF | replace with authoritative nine-criterion 100-point mapping | test/docs.test.ts complete official weights and document coverage |
+| P10-2 | test/native/live.ts | 41 | greeting probe mislabeled as fixed Task C | C did not reuse the inline request | repeat Task A prompt and require a clean checkout even after expected failure | exact native Task C rerun; runner checks prompt, error and git status |

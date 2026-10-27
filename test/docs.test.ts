@@ -24,3 +24,13 @@ it('provides repository metadata for VSIX README link rewriting',async()=>{
  const pkg=JSON.parse(await fs.readFile('package.json','utf8'));
  expect(pkg.repository).toEqual({type:'git',url:'https://github.com/s2kumar2007/VS-CODE-EXTENSION.git'});
 });
+
+it('maps every organizer criterion and preserves the official 100-point weights',async()=>{
+ const rubric=JSON.parse(await fs.readFile('docs/official-rubric.json','utf8'));
+ expect(rubric.criteria.map((r:any)=>[r.id,r.points])).toEqual([['A1',10],['A2',10],['A3',10],['B1',15],['B2',10],['B3',10],['B4',10],['C1',10],['C2',15]]);
+ expect(rubric.criteria.reduce((sum:number,r:any)=>sum+r.points,0)).toBe(100);
+ const doc=await fs.readFile('docs/RUBRIC.md','utf8');const writeup=await fs.readFile('docs/WRITEUP.md','utf8');
+ for(const r of rubric.criteria){expect(doc).toContain('| '+r.id+' |');expect(writeup).toContain('| '+r.id+' '+r.focus+' |');}
+ expect(rubric.source.sha256).toMatch(/^[a-f0-9]{64}$/);
+ expect(rubric.source.url).toBe('https://techfest.org/media/compiProbStatement/TrueFoundry_Forge-a-thon_compressed_UvvRJ9C.pdf');
+});

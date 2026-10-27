@@ -1,17 +1,19 @@
-# Rubric evidence checklist
+# Official rubric evidence checklist
 
-The request names A1–A3 and B1–B4 but does not include their official definitions, and no organizer rubric is committed in this repository. The working mapping below groups the requested audit dimensions; it is not an assertion of official scoring or a substitute for the organizer rubric. Blocked items remain unchecked.
+Source: [Techfest Forge-a-thon problem statement](https://techfest.org/media/compiProbStatement/TrueFoundry_Forge-a-thon_compressed_UvvRJ9C.pdf), pages 7–9. The competition API links this PDF. SHA-256: 5feeee151edc6bf098743e6eaf5e87b8996adc7bc13abbe1fc8409074d6ddb49. Definitions and weights are now sourced; this replaces the earlier provisional mapping. Evidence status is self-reported, not an awarded score.
 
-| Item | Working interpretation | Evidence file(s) | Demo step | Status |
-|---|---|---|---|---|
-| A1 | Inline edit on get_debug_flag | src/inline/inlineEdit.ts; agents/forge-inline.json; test/native/index.ts | scripts/demo.md Task A: select helper, invoke inline edit, review, verify off/n | [ ] Real run failed before approval: daily provider quota exhausted; native editor checks passed |
-| A2 | Agent mode, no files named, >=3 changed files | src/panel/ChatPanel.ts; src/context/assemble.ts; agents/forge-agent.json | scripts/demo.md Task B: send exact config command prompt, inspect Context used, review code/tests/docs, run pytest | [ ] Real run failed before approval: daily provider quota exhausted; 5,978 estimated context tokens / 22 items selected |
-| A3 | Bad key/endpoint recovery | src/agent/resilience.ts; src/agent/controller.ts; test/resilience.test.ts; test/contract.test.ts | scripts/demo.md Task C: disposable bad-provider setup, observe backoff/fallback, confirm unchanged git status before approval | [x] Real invalid-key retry/fresh fallback passed; automated endpoint faults and manual offline activation also recorded |
-| B1 | TrueForge contract and backend agent loop | src/forge/client.ts; agents.ts; turnRunner.ts; test/contract.test.ts | Show local /api/v1/openapi.json and TrueForge session turns; verify pure approval input and owning thread | [x] SDK wire tests and local schema verified; model execution pending |
-| B2 | Context selection and bounded budget | src/context; test/context.test.ts; test/contextHost.test.ts | Expand Context used during Task B; run 5000-file budget regression | [x] Automated retrieval, real file reasons and rendered estimate verified |
-| B3 | Review, cancellation, paths, commands, undo | src/review; src/workspace; test/safety.test.ts; test/editorSafety.test.ts; test/native/index.ts | Accept one hunk/reject another; Stop while diff open; reopen file and Undo last; try outside paths; cancel command | [x] Automated + native Windows evidence; arbitrary commands remain unsandboxed |
-| B4 | Reproducibility, portability and honest docs | README.md; docs/WRITEUP.md; .github/workflows/ci.yml | Fresh clone npm ci, typecheck, tests, build; follow setup; show native results | [x] Three-OS CI passed for 3236dac; Windows VSIX install and native checks passed |
+| ID | Maximum | Criterion | Evidence | Demo proof | Current status |
+|---|---:|---|---|---|---|
+| A1 | 10 | Inline edit | src/inline/inlineEdit.ts; src/review/ReviewPanel.ts | Task A: show the editor diff and accept/reject individual hunks. | Live A blocked by daily quota; native mechanisms pass. |
+| A2 | 10 | Agent mode | src/panel/ChatPanel.ts; src/agent/controller.ts | Task B: discover and edit at least three files from the filename-free request. | Live B blocked by daily quota. |
+| A3 | 10 | Streaming and cancellation | src/forge/turnRunner.ts; src/agent/controller.ts; test/cancel.test.ts | Stream text and Stop; show responsive UI and consistent files. | Automated tests pass; required video not recorded. |
+| B1 | 15 | Context assembly | src/context; test/context.test.ts; docs/live-B-retry-aware.json | Task B: show selected paths/reasons and the context budget. | Budget/retrieval tests pass; live trace selects 22 items within 6000 estimated tokens. |
+| B2 | 10 | Diff safety | src/review; src/workspace/vscodeApi.ts; docs/vsix-activation-native-results.json | Accept/reject hunks, apply, and Undo on screen. | Installed native tests pass; video not recorded. |
+| B3 | 10 | Resilience | src/agent/resilience.ts; docs/live-C.json; docs/live-C-sessions.json | Task C: repeat the Task A request against a failed provider and show unchanged git status. | Earlier greeting probe demonstrates fallback only; exact Task C rerun pending. |
+| B4 | 10 | TrueForge integration depth | src/mcp; src/forge; agents; test/contract.test.ts | Show MCP approval and an observed context-engineering feature in the session. | Wire/MCP tests pass. Subagent/compaction flags alone do not establish top-anchor behavior. |
+| C1 | 10 | Video | scripts/demo.md | A, B, C in order, visible checks and the B session, within four minutes. | Video not supplied; no credit claimed. |
+| C2 | 15 | Write-up | docs/WRITEUP.md | Submit a 1–3 page PDF with eight ordered sections and timestamped scorecard. | Markdown draft exists; team institution, final PDF and video timestamps remain unconfirmed. |
 
-Session behavior: the same session is reused for approval resumes, not between separate user requests. Overlapping requests are rejected; two calls in one completed turn are reviewed sequentially and resumed together. Stale decisions are cleared on cancellation, attempt failure and completion.
+The nine criteria total 100 points: A=30, B=45, C=25. Actual behavior must be visible to the judges; tests do not replace the prescribed video. The eligibility gate requires the TrueForge loop and MCP editor tools, local reproducibility, provider independence, committed definitions, and the Task B session in the demo.
 
-No model keys are needed to run unit tests or the native VS Code host tests. Real Tasks A–C must be recorded separately after configuring providers; do not present synthetic fault tests as provider-backed results.
+No live A/B success or score is asserted. Native and controlled tests are supporting evidence. The earlier successful greeting-based failure probe must not be presented as the exact fixed Task C. The official source makes the sandbox optional; confirmed commands still have the documented host-permission limitation.

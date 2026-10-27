@@ -45,7 +45,7 @@ export async function run(): Promise<void> {
  const synced=await syncAgents(client,agents);if(synced.some(a=>!a.ok))throw new Error(JSON.stringify(synced));
  const controller=new AgentController({getClient:()=>client,approvals,agents:()=>({primary:task==='C'?'forge-audit-invalid':'forge-agent',fallback:task==='C'?'forge-agent':undefined}),onRunStart:()=>api.beginRun(),onCancel:()=>api.cancelCommands()});
  let prompt='Reply with a short greeting. Do not edit files or run commands.';
- if(task==='A'){
+ if(task==='A'||task==='C'){
  const text=(await api.readText(path.join(root,'src/flask/helpers.py')))!;const lines=text.split('\n');const start=lines.findIndex(l=>l.startsWith('def get_debug_flag'));let end=start+1;while(end<lines.length&&!lines[end]!.startsWith('def get_load_dotenv'))end++;
  prompt=buildInlinePrompt('src/flask/helpers.py',start+1,end,lines.slice(start,end).join('\n'),"Treat the values 'off' and 'n' as false as well, case-insensitively, and update the docstring to list every value that is treated as false.");
  }else if(task==='B'){
