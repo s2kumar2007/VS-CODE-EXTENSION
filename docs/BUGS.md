@@ -40,3 +40,4 @@ Original line numbers refer to audited base commit 4ca90c9. Each defect was repo
 | P9-1 | package.json | 1 | VSIX packaging fails on relative README links | repository URL missing | add repository metadata | test/docs.test.ts and successful VSCE package |
 | P9-2 | README.md | 29 | local MCP registration returns HTTP 400 | TrueForge outbound policy blocks loopback by default | document explicit 127.0.0.1 allowlist | live registration retry recorded in follow-up audit |
 | P9-3 | test/native/index.ts | 29 | native Undo assertion races UI/document updates | global Undo focus and event observation not synchronized | focus editor, await document change | installed VSIX native host passed |
+| P9-4 | agents/*.json | 35 | live turns spend extra provider requests discovering editor schemas | preload disabled for the known editor tools | preload editor schemas in all manifests | real-provider trace and SDK manifest regression |

@@ -24,6 +24,7 @@ describe('TrueForge wire contract', () => {
     const create = requests.find(r => r.method === 'POST')!;
     expect(create.url).toBe('http://contract.test/api/v1/agents');
     expect(create.body.manifest.mcp_servers[0].require_approval_for_tools).toContain('propose_write');
+    expect(create.body.manifest.mcp_servers[0].preload).toBe(true);
     expect(create.body.manifest.config.dynamic_sub_agents.enabled).toBe(true);
     existing = true;
     expect((await syncAgents(client, agents))[0]?.ok).toBe(true);

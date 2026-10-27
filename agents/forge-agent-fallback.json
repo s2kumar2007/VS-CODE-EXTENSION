@@ -19,7 +19,7 @@
           "propose_write",
           "run_command"
         ],
-        "preload": false
+        "preload": true
       }
     ],
     "config": {

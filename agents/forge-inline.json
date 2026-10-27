@@ -18,7 +18,7 @@
         "require_approval_for_tools": [
           "propose_write"
         ],
-        "preload": false
+        "preload": true
       }
     ],
     "config": {
