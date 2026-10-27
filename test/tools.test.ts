@@ -9,7 +9,7 @@ import { registerEditorTools } from '../src/mcp/tools';
 import type { EditorApi } from '../src/workspace/types';
 import { rgText } from '../src/workspace/ripgrep';
 
-const rg = path.resolve('node_modules/@vscode/ripgrep-linux-x64/bin/rg');
+const rg = path.resolve(`node_modules/@vscode/ripgrep-${process.platform}-${process.arch}/bin/${process.platform === 'win32' ? 'rg.exe' : 'rg'}`);
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tools-'));
 fs.writeFileSync(path.join(dir, 'a.py'), 'def hello():\n    return 1\n');
 const writes: string[] = [];

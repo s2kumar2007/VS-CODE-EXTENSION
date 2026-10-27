@@ -25,7 +25,7 @@ describe('resolveInsideReal (symlinks)', () => {
   it('rejects a symlink pointing outside, allows new files', async () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ws-'));
     const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'out-'));
-    fs.symlinkSync(outside, path.join(dir, 'link'));
+    fs.symlinkSync(outside, path.join(dir, 'link'), process.platform === 'win32' ? 'junction' : 'dir');
     await expect(resolveInsideReal(dir, 'link/secret.txt')).rejects.toThrow(PathError);
     await expect(resolveInsideReal(dir, 'new/dir/file.txt')).resolves.toBe(path.join(dir, 'new/dir/file.txt'));
   });
