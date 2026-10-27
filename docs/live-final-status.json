@@ -1,0 +1,11 @@
+{
+  "commit": "2cc66c3",
+  "A": "failed: provider quota; no approved edits",
+  "B": "failed: provider quota; no approved edits",
+  "git_status": {
+    "A": "",
+    "B": ""
+  },
+  "TaskC": "passed: real invalid-key retry and distinct fallback session",
+  "manual_UI_tasks": "not claimed; live harness uses scoped programmatic review"
+}

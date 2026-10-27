@@ -1,0 +1,20 @@
+{
+  "commit": "2cc66c325b898b177bf350596257f41ec59b382b",
+  "run": "https://github.com/s2kumar2007/VS-CODE-EXTENSION/actions/runs/40548298747",
+  "status": "completed",
+  "conclusion": "success",
+  "jobs": [
+    {
+      "name": "verify (ubuntu-latest)",
+      "conclusion": "success"
+    },
+    {
+      "name": "verify (macos-latest)",
+      "conclusion": "success"
+    },
+    {
+      "name": "verify (windows-latest)",
+      "conclusion": "success"
+    }
+  ]
+}

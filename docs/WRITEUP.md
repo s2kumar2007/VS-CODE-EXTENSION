@@ -34,8 +34,8 @@ Generation succeeded on both configured models. Gemini 3.8 was listed but return
 |---|---|---|
 | Clean clone / npm ci | Passed | docs/AUDIT.md phase 8 |
 | Typecheck / unit suite / build | Passed | audit phase records |
-| A inline get_debug_flag | Live attempts reached provider; quota-limited before approval | docs/live-A-provider-503.json; docs/live-A-provider-429.json |
-| B flask config, >=3 files | Live validation pending | Baseline 58 CLI tests pass; no model edit claimed |
+| A inline get_debug_flag | Live attempt failed: daily quota exhausted before approval | docs/live-A-retry-aware.json; exact errors in live-A-retry-sessions.json |
+| B flask config, >=3 files | Live attempt failed: daily quota exhausted before approval | docs/live-B-retry-aware.json; baseline 58 CLI tests passed |
 | C bad key / bad endpoint | Real bad-key retry/fallback passed; offline activation and injected endpoint faults covered separately | docs/live-C.json; docs/live-C-sessions.json; resilience.test.ts |
 | Native Windows review-edit undo | Passed | docs/native-host-results.json |
 | Windows / macOS / Linux CI | Passed for commit 3236dac | docs/ci-results.json; GitHub run 40505578815 |
