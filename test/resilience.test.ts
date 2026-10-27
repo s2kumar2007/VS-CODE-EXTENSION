@@ -3,7 +3,7 @@ import { runWithFallback, ForgeFailure, CancelledError } from '../src/agent/resi
 import { AgentController } from '../src/agent/controller';
 import { ReviewApprovals } from '../src/review/approvals';
 import { DecisionStore } from '../src/review/decisions';
-import { FakeTrueForge, RecordingUi, created, delta, done, errorDone } from './fakes';
+import { FakeTrueForge, RecordingUi, created, delta, done, errorDone, toolMsg, approvalRequired } from './fakes';
 import { tempRepo } from './helpers';
 
 const opts = (attempt: (a: string) => Promise<string>, extra = {}) => {
@@ -109,4 +109,13 @@ describe('fault matrix', () => {
     const calls:string[]=[];const {o}=opts(async a=>{calls.push(a);throw Error('drop after write');},{canRetry:()=>false});
     await expect(runWithFallback(o)).rejects.toThrow('automatic replay was skipped');expect(calls).toEqual(['p']);
   });
+});
+
+
+it('does not replay an approved command or claim an unchanged workspace on uncertain completion',async()=>{
+  const tf=new FakeTrueForge({p:[()=>[created(),toolMsg('m','tc','run_command',{command:'npm test'}),approvalRequired('tc','m'),done()],()=>{throw Error('drop after approval');}],f:[()=>[created(),done()]]});
+  const ctl=new AgentController({getClient:()=>tf.client,approvals:{decide:async()=>({status:'allow'}),cancelAll(){}},agents:()=>({primary:'p',fallback:'f'}),retries:2,sleep:async()=>{}});
+  const ui=new RecordingUi();await ctl.run('run tests',ui);
+  expect(ui.result?.status).toBe('error');expect(ui.result?.message).toContain('may have completed');
+  expect(ui.result?.message).not.toContain('No changes were made');expect(tf.sessions.size).toBe(1);
 });

@@ -49,7 +49,7 @@ describe('cancellation (stage 6)', () => {
       close: () => { closed++; },
     };
     const tf = new FakeTrueForge({
-      'forge-agent': [() => [created(), toolMsg('m1', 'tc1', 'propose_write', { path: 'f.txt', new_content: NEW, rationale: 'r' }), approvalRequired('tc1', 'm1')]],
+      'forge-agent': [() => [created(), toolMsg('m1', 'tc1', 'propose_write', { path: 'f.txt', new_content: NEW, rationale: 'r' }), approvalRequired('tc1', 'm1'), done()]],
     });
     const { ctl, store } = build(root, reviewUi, tf);
     const ui = new RecordingUi();

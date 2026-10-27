@@ -81,3 +81,15 @@ Typecheck, 74 tests, build passed on Windows x64. Native VS Code test host PASSE
 |---|---|---|---|---|
 | P7-1 | src/workspace/vscodeApi.ts:70 | sibling prefix accepted as workspace symbol | segment-aware containment + file scheme | editorSafety.test.ts |
 | P7-2 | src/workspace/vscodeApi.ts:21 | inherited npm target arch can select wrong binary | use running host architecture | editorSafety.test.ts; native host |
+
+## Phase 8 — docs and final verification
+
+Fresh clone of phase 7 (4e6241f): npm ci, typecheck, all 74 tests and build PASSED. Final source/docs regression counts are recorded below after the final gate. README now uses npm ci, both platform venv activation forms are in the demo, current provider IDs are separated from TrueForge aliases, and the eight write-up headings are retained. docs/BUGS.md is the consolidated 32-row table with original 4ca90c9 line numbers. docs/RUBRIC.md includes all seven requested labels with explicit status and an interpretation caveat (official definitions were not supplied/found).
+
+Current model examples were checked against the live TrueForge provider catalog and official Google/Groq docs. Google Gemini 3.8 Flash uses provider model_id gemini-3.8-flash and catalog configured name gemini-3-8-flash. Groq gpt-oss-120b uses provider model_id openai/gpt-oss-120b; the old Llama 3.3 fallback is restricted to enterprise contracts. Sources: https://ai.google.dev/gemini-api/docs/models and https://console.groq.com/docs/deprecations. Account entitlement remains unverified without credentials.
+
+Late resilience correction: an approval event followed by EOF without turn.done is now treated as an interrupted stream; no review is opened and no approval is sent. Regression: contract.test.ts. The former fake streams missing terminal events were corrected to match the live contract.
+
+Unfinished validation: model-backed Flask Tasks A/B and live provider-key Task C need configured models (GET /api/v1/models was empty). macOS/Linux CI and packaged VSIX installation are pending. Arbitrary confirmed commands remain unsandboxed; no claim of complete filesystem containment or rollback is made. Nothing was pushed or published.
+
+Final phase gate: npm run typecheck && npm test && npm run build PASSED; 79 tests across 15 test files. Windows native host evidence passed separately. All declared npm versions exist.

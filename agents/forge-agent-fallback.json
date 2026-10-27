@@ -3,7 +3,7 @@
   "description": "Fallback Forge agent on a different provider (Groq via custom OpenAI-compatible provider).",
   "manifest": {
     "model": {
-      "name": "groq/llama-3.3-70b-versatile",
+      "name": "groq/gpt-oss-120b",
       "params": {
         "temperature": 0.2
       }

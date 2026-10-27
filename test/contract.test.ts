@@ -64,3 +64,11 @@ it('uses the real SDK SSE decoder and serializes session, turns and cancel corre
   expect(requests[0]?.body.agent).toEqual({name:'p'});
   expect(requests[1]?.body).toMatchObject({stream:true,input:[{type:'user.message',content:'x'}]});
 });
+
+
+it('does not open approval review when SSE ends before a terminal event',async()=>{
+  const tf=new FakeTrueForge({p:[()=>[created(),toolMsg('m','tc','propose_write',{path:'a',new_content:'b'}),approvalRequired('tc','m')]]});
+  const {data:s}=await tf.client.sessions.create({agent:{name:'p'}});
+  const result=await runTurn(tf.client,s.id,[],{onTextDelta(){},onToolCall(){}});
+  expect(result.status).toBe('unknown');expect(result.approvals).toEqual([]);
+});

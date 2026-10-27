@@ -1,52 +1,63 @@
-# Forge Agent - write-up
+# Forge Agent — write-up
 
 ## 1. Team
-TODO: team name, members, roles.
+
+Submission team name, members and roles have not been supplied. Repository ownership is recorded in Git; no team identity is invented here.
 
 ## 2. Starting point (from scratch)
-Written from scratch, no fork. MIT licensed. Dependencies: `@truefoundry/trueforge-sdk`, `@modelcontextprotocol/sdk`, `zod`, `diff`, `@vscode/ripgrep`.
+
+This audit starts from repository commit 4ca90c9. The repository describes its original implementation as from scratch; that provenance has not been independently verified. This audit preserves the working extension architecture and adds targeted fixes and regressions. MIT license. Main dependencies: TrueForge SDK, MCP SDK, zod, diff and @vscode/ripgrep.
 
 ## 3. Architecture on TrueForge
-```
-VS Code extension host                         TrueForge (localhost:8790)
- ChatPanel / inline edit  --AgentController-->  sessions.create / createTurnStream  (agent loop, subagents, compaction)
- ReviewPanel (diff+hunks) <-- tool.approval_required                |
- MCP server 127.0.0.1:<port>/mcp  <------ remote MCP (bearer token) +  tools/call
-```
-- **Agent loop on TrueForge.** The extension is a client of `@truefoundry/trueforge-sdk`. `AgentController` creates a session for a named agent, streams a turn (`runTurn`: id-keyed event Map, `isEventDelta`/`mergeEventDelta`, live `model.message.delta` text), and repeats until `turn.done`.
-- **Editor as MCP tools.** `src/mcp/server.ts` hosts a stateless streamable-HTTP MCP server on 127.0.0.1 (random port, random bearer token held in memory). On activation it is registered in TrueForge with `settings.mcpServers.createOrUpdate` (name `forge-editor`) and the agents in `agents/*.json` are created/updated by name. Tools: `read_file`, `list_dir`, `search_workspace` (ripgrep text + symbol), `propose_write`, `run_command`. All paths are validated inside the workspace (lexical + symlink check).
-- **Approvals.** Agents list `propose_write`/`run_command` in `require_approval_for_tools`. A gated call ends the turn with `tool.approval_required`; the controller reads the call from the issuing `model.message`, asks the review UI, and resumes with a NEW turn containing only `user.tool_approval` items (allow, or deny with a reason).
-- **Review and apply.** `propose_write` arguments are diffed against the current file into hunks (`diff` package). The user accepts/rejects hunks in a webview list while a native diff editor shows the live result. The decision is stored under hash(path, content); when TrueForge executes the allowed call, the MCP handler applies only accepted hunks through one `WorkspaceEdit` and returns "applied hunks 1,3; rejected 2". With no stored decision the handler refuses, so nothing is written without review.
-- **Cancellation.** Stop calls `sessions.cancel`, aborts the local review (AbortSignal), discards stored decisions, closes review UI; the stream ends by itself with `turn.done(cancelled)`.
-- **Resilience.** `runWithFallback`: 1 try + 2 retries (1s, 2s backoff) on the primary agent, then the fallback agent (different provider) in a new session with the same request, notice "Primary model failed, using fallback"; if both fail one clear message. Writes only happen after approval, so failed runs leave the workspace unchanged.
+
+The extension calls TrueForge sessions.create and createTurnStream. The model loop, provider calls, subagents and context compaction run in TrueForge. The editor hosts an authenticated loopback MCP endpoint exposing read_file, list_dir, search_workspace, propose_write and run_command. Registration uses PUT /api/v1/settings/mcp-servers with remote manifest/header auth. Agent create/update is by immutable registry id after an exact-name lookup.
+
+An id-keyed event index merges deltas and locates approval arguments by source_event_id plus tool-call id. The pending event owns thread_id. A complete terminal event is required before requesting approval. A resume turn contains only user.tool_approval items. Stop sends sessions.cancel, aborts streaming/local reviews and clears unused decisions.
+
+File writes require a single-use reviewed (path, content) decision, unchanged base text, workspace containment and an active run. Only accepted immutable diff segments are reconstructed into one WorkspaceEdit, preserving offsets and CRLF. Undo checks the current text and removes newly created files. Commands need separate exact local permits, have bounded output and cancellable process trees; they are not sandboxed.
 
 ## 4. How context is selected (strategy + budget)
-`src/context/assemble.ts`, default budget **6000 tokens** (`forge.contextBudget`), tokens estimated as chars/4.
-1. **Explicit mentions** `@file:path` / `@symbol:name` (autocomplete in the panel): highest priority; large files are cut to head + signatures; symbols to ~40 lines.
-2. **Ranked shortlist** from the request: keywords (stop-words removed) -> ripgrep hits per file; path matches; symbol-name matches among top candidates (regex top-level symbols); files that import the best-matching modules (+1.5). Each candidate contributes its top-level **signatures** plus up to two **slices** (+-6 lines around hits, merged). Never whole files.
-3. **Repo map** (directory -> files), capped at ~20% of the budget.
-4. **Packing** (`packContext`): by priority, truncating the last item that does not fit (if >= 80 tokens remain), dropping the rest. Output never exceeds the budget.
-The agent also gets `search_workspace` (ranked, one-line "why" per result) and is instructed to state which files it chose and why. The panel shows a "Context used" section (label, reason, tokens).
+
+Agent mode always attempts retrieval. Keywords, ranked literal/symbol matches, importers and explicit @file/@symbol mentions select file snippets, signatures and a compact repo map. Reasons and real file labels appear in Context used. Dense hit windows and explicit heads are capped at 40 lines; signatures are capped at 25. Tiny files can naturally fit within a snippet.
+
+The default 6000-token limit is a chars/4 estimate of the rendered CONTEXT block, including labels, reasons, fences, separators and preamble. It is not an exact model tokenizer count or a limit on the whole turn (request/history/instructions/tool schemas are separate). A synthetic 5000-file fixture verifies the rendered estimate remains within the budget. Context reads enforce realpath containment. Stop during assembly prevents the subsequent model request.
 
 ## 5. Model setup
-- Primary: `google-gemini/<model>` (catalog provider). Fallback: `groq/<model>` (custom OpenAI-compatible provider named `groq`). Both configured only in TrueForge Settings; run on the providers' hosted APIs, TrueForge runs locally via `npx`.
-- Cost: TODO (fill from TrueForge session metrics / provider pricing).
-- Switching: edit `model.name` in `agents/*.json` (re-synced on next activation) or change `forge.agentName` / `forge.fallbackAgentName`.
+
+Verified example identifiers on 27 October 2026:
+
+| Role | TrueForge agent reference | Provider model_id |
+|---|---|---|
+| Primary/inline | google-gemini/gemini-3-8-flash | gemini-3.8-flash |
+| Fallback | groq/gpt-oss-120b | openai/gpt-oss-120b |
+
+Configure Google Gemini and a custom OpenAI-compatible provider named groq in TrueForge. Model configured names are aliases, distinct from provider model_id values. Groq base URL: https://api.groq.com/openai/v1. Keys belong only in TrueForge Settings. See README for current provider references. The audited server returned an empty models list; no real model invocation or provider cost was measured. Cost is unknown, not zero.
 
 ## 6. Scorecard
-| Task | Result | Start | End | Notes |
-|---|---|---|---|---|
-| A inline edit | TODO | TODO | TODO | |
-| B agent mode | TODO | TODO | TODO | |
-| C failure handling | TODO | TODO | TODO | |
+
+| Check | Observed result | Evidence |
+|---|---|---|
+| Clean clone / npm ci | Passed | docs/AUDIT.md phase 8 |
+| Typecheck / unit suite / build | Passed | audit phase records |
+| A inline get_debug_flag | Blocked: no configured provider | Flask commit verified; native host opens |
+| B flask config, >=3 files | Blocked: no configured provider | No successful multi-file model edit claimed |
+| C bad key / bad endpoint | Automated fault tests pass; manual offline activation observed | resilience.test.ts, contract.test.ts, audit phase 3 |
+| Native Windows review-edit undo | Passed | docs/native-host-results.json |
+| macOS / Linux runtime | Not executed locally | CI matrix added; results pending |
+
+Task A/B execution times, live tokens, provider costs and model-generated Flask changes are not available. No fabricated success or stack traces. Exact observed launch failure and activation message are in the audit. The rubric evidence mapping is in docs/RUBRIC.md; official label definitions were not supplied.
 
 ## 7. Tools used
-TrueForge + TS SDK, MCP SDK, VS Code Extension API, esbuild, TypeScript, vitest, ripgrep, `diff`. TODO: list AI assistants used while building.
+
+TrueForge 0.180.1, TS SDK 0.180.0, VS Code native extension test host, MCP SDK, TypeScript, esbuild, Vitest, ripgrep, diff, Node and Git. ChatGPT assisted this audit and regression implementation. Unit tests include scripted clients and mocked VS Code APIs; wire tests use the real SDK with controlled HTTP/SSE responses. Native host tests exercise real VS Code editing, undo and ripgrep without calling models.
 
 ## 8. Known limitations
-- Not yet exercised against a live TrueForge/VS Code by the author of this code; first F5 run may need small adjustments (e.g. model ids, tool-name format in approval events - matching is by suffix).
-- `propose_write` sends the full file content; very large files are costly. Hunks are line-based.
-- Symbol search falls back to definition-regex when no language server answers.
-- `@vscode/ripgrep` ships per-platform packages; a cross-platform VSIX needs them all.
-- Retries re-send the request; changes already applied before a failure are not rolled back automatically (use "Undo last applied change").
-- Single workspace folder; one run at a time.
+
+- Full live Tasks A/B and provider-key Task C still require configured models and account entitlement. Dynamic subagents are enabled in manifests, not verified in a model-backed run.
+- run_command executes with user permissions. Path preflight catches explicit escapes but cannot sandbox arbitrary code or guarantee outside files are untouched. Approved command effects cannot be rolled back.
+- Before approval, failures use exponential retries then fallback in a fresh session. After any write/command approval, replay stops to prevent duplication; uncertain effects are reported. Failure/Stop can retain already approved changes.
+- One folder and one active request. Each user request creates a fresh session; approval resumes reuse it. The shared forge-editor registration does not isolate multiple windows on one server.
+- Undo history is in memory for 50 changes and does not survive extension reload. It refuses later text changes rather than merging an inverse patch. New file undo is supported; directory cleanup is not automatic.
+- Line-based diffs, complete proposed file content, regex symbol fallback and a chars/4 context estimate. CRLF normalization retains the existing convention; mixed-EOL fidelity is not promised.
+- Remote/OIDC auth is not configured. The local MCP bearer token protects the endpoint; it is not an OS sandbox. Symlink checks cannot eliminate races with other processes changing the filesystem concurrently.
+- macOS/Linux native execution and packaged VSIX install remain unverified; package on each target platform with optional ripgrep dependencies. No universal VSIX is delivered.

@@ -53,7 +53,7 @@ describe('approval loop (propose_write)', () => {
     const { file, store, approvals } = setup([]);
     const tf = new FakeTrueForge({
       'forge-agent': [
-        () => [created(), toolMsg('m1', 'tc1', 'propose_write', { path: 'f.txt', new_content: NEW, rationale: 'r' }), approvalRequired('tc1', 'm1')],
+        () => [created(), toolMsg('m1', 'tc1', 'propose_write', { path: 'f.txt', new_content: NEW, rationale: 'r' }), approvalRequired('tc1', 'm1'), done()],
         () => [created(), done()],
       ],
     });

@@ -4,7 +4,23 @@
   "forge.agentName": "forge-agent",
   "forge.fallbackAgentName": "forge-agent-fallback",
   "trueforgeModelProviders": {
-    "primary": { "type": "google-gemini", "auth": { "api_key": "<YOUR_GEMINI_KEY>" }, "model": "gemini-2.5-flash" },
-    "fallback": { "type": "custom", "name": "groq", "base_url": "https://api.groq.com/openai/v1", "auth": { "api_key": "<YOUR_GROQ_KEY>" }, "model": "llama-3.3-70b-versatile" }
+    "primary": {
+      "type": "google-gemini",
+      "auth": {
+        "api_key": "<YOUR_GEMINI_KEY>"
+      },
+      "model": "gemini-3.8-flash",
+      "name": "gemini-3-8-flash"
+    },
+    "fallback": {
+      "type": "custom",
+      "name": "groq",
+      "base_url": "https://api.groq.com/openai/v1",
+      "auth": {
+        "api_key": "<YOUR_GROQ_KEY>"
+      },
+      "model": "openai/gpt-oss-120b",
+      "model_name": "gpt-oss-120b"
+    }
   }
 }

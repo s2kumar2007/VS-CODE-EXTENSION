@@ -3,7 +3,7 @@
   "description": "Forge primary coding agent: searches, reads, plans and proposes edits through editor MCP tools.",
   "manifest": {
     "model": {
-      "name": "google-gemini/gemini-2.5-flash",
+      "name": "google-gemini/gemini-3-8-flash",
       "params": {
         "temperature": 0.2
       }

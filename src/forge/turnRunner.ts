@@ -34,6 +34,7 @@ export async function runTurn(
 ): Promise<TurnResult> {
   const events: TurnEvents = new Map();
   const result: TurnResult = { events, status: 'unknown', approvals: [] };
+  let terminal = false;
   const stream = await client.sessions.createTurnStream(sessionId, { input }, { abortSignal: signal, maxRetries: 0, timeoutInSeconds: 600 });
 
   for await (const { data: event } of stream.withMetadata()) {
@@ -59,13 +60,14 @@ export async function runTurn(
       case 'tool.approval_required':
         if (!Array.isArray(event.toolCalls) || typeof event.threadId !== 'string') throw new Error('TrueForge sent an invalid approval event.');
         for (const ref of event.toolCalls) {
-          // The ref only has ids; the thread comes from the model message that issued the call.
+          // The approval event owns the thread; sourceEventId locates name and arguments.
           const threadId = event.threadId;
           result.approvals.push({ toolCallId: ref.id, threadId, sourceEventId: ref.sourceEventId });
         }
         result.status = 'paused';
         break;
       case 'turn.done':
+        terminal = true;
         result.status = event.state.status === 'done' && result.approvals.length > 0 ? 'paused' : event.state.status;
         if (event.state.status === 'error') result.error = event.state.message;
         break;
@@ -73,6 +75,7 @@ export async function runTurn(
         break;
     }
   }
+  if (!terminal) { result.status = 'unknown'; result.approvals = []; }
   if (result.status === 'paused' && result.approvals.length === 0) result.status = 'unknown';
   return result;
 }
