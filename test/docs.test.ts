@@ -19,3 +19,8 @@ it('documents that confirmed shell commands and prior effects are outside rollba
   expect(readme).toContain('not an OS sandbox');expect(readme).toContain('can retain previously approved effects');
   expect(readme).not.toContain('A cancelled or failed run therefore changes nothing');
 });
+
+it('provides repository metadata for VSIX README link rewriting',async()=>{
+ const pkg=JSON.parse(await fs.readFile('package.json','utf8'));
+ expect(pkg.repository).toEqual({type:'git',url:'https://github.com/s2kumar2007/VS-CODE-EXTENSION.git'});
+});
