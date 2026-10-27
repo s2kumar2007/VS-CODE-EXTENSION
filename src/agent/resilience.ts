@@ -23,6 +23,17 @@ export function briefReason(err: unknown): string {
   return raw.split('\n')[0]!.replace(/\s+/g, ' ').slice(0, 160);
 }
 
+/** Quota retry hints can arrive in turn.done text rather than HTTP headers. */
+function retryDelay(error: unknown, exponentialMs: number): number {
+  const message = error instanceof Error ? error.message : String(error);
+  if (!/\b429\b/.test(message)) return exponentialMs;
+  const hint = /retry\s+in\s+(\d+(?:\.\d+)?)s\b/i.exec(message);
+  if (!hint) return exponentialMs;
+  const seconds = Number(hint[1]);
+  if (!Number.isFinite(seconds)) return exponentialMs;
+  return Math.max(exponentialMs, Math.min(60_000, Math.ceil(seconds * 1000) + 250));
+}
+
 /**
  * try primary (1 + `retries` times with exponential backoff) -> switch to the fallback agent
  * (fresh session, same request, handled by `attempt`) -> else throw ONE clear ForgeFailure.
@@ -43,7 +54,7 @@ export async function runWithFallback<T>(o: FallbackOptions<T>): Promise<T> {
         if (o.canRetry && !o.canRetry()) throw new ForgeFailure('The run stopped after an approved operation; automatic replay was skipped.');
         if (i < o.retries) {
           o.onRetry?.(agent, i + 1, e);
-          await o.sleep(o.backoffMs * 2 ** i);
+          await o.sleep(retryDelay(e, o.backoffMs * 2 ** i));
         }
       }
     }

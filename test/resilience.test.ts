@@ -119,3 +119,24 @@ it('does not replay an approved command or claim an unchanged workspace on uncer
   expect(ui.result?.status).toBe('error');expect(ui.result?.message).toContain('may have completed');
   expect(ui.result?.message).not.toContain('No changes were made');expect(tf.sessions.size).toBe(1);
 });
+
+it('honors a quota retry hint before replaying an unapproved request', async () => {
+ let elapsed=0, attempts=0;
+ const {o}=opts(async()=>{attempts++;if(elapsed<39000)throw new Error('Request failed (429): Please retry in 38.976679664s.');return 'ok';},{sleep:async(ms:number)=>{elapsed+=ms;}});
+ expect(await runWithFallback(o)).toBe('ok');expect(attempts).toBe(2);expect(elapsed).toBeGreaterThanOrEqual(39000);expect(elapsed).toBeLessThanOrEqual(60000);
+});
+it('caps excessive quota hints and preserves backoff for other failures',async()=>{
+ let n=0;const quota=opts(async()=>{if(++n===1)throw new Error('429 Please retry in 3600s.');return 'ok';});
+ expect(await runWithFallback(quota.o)).toBe('ok');expect(quota.sleeps).toEqual([60000]);
+ let m=0;const ordinary=opts(async()=>{if(++m<3)throw new Error('503 Please retry in 60s.');return 'ok';});
+ expect(await runWithFallback(ordinary.o)).toBe('ok');expect(ordinary.sleeps).toEqual([1000,2000]);
+});
+it('Stop interrupts provider-directed backoff before another session starts',async()=>{
+ const {root}=tempRepo();const tf=new FakeTrueForge({p:[()=>[created(),errorDone('429 Please retry in 60s.')]]});
+ let retrying!:()=>void;const retryStarted=new Promise<void>(resolve=>{retrying=resolve;});
+ const ui=new RecordingUi();const original=ui.notice.bind(ui);ui.notice=text=>{original(text);if(text.includes('retrying'))retrying();};
+ const approvals=new ReviewApprovals({root,ui:{reviewHunks:async()=>[],confirmCommand:async()=>false,close(){}},store:new DecisionStore(),readText:async()=>undefined});
+ const ctl=new AgentController({getClient:()=>tf.client,approvals,agents:()=>({primary:'p'})});
+ const running=ctl.run('hello',ui);await retryStarted;await ctl.cancel();await running;
+ expect(ui.result?.status).toBe('cancelled');expect(tf.inputs).toHaveLength(1);
+},2000);

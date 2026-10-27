@@ -16,6 +16,15 @@ export interface ControllerDeps {
   prepare?: () => Promise<void>;
 }
 
+function sleepForRetry(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise(resolve => {
+    if (signal.aborted) { resolve(); return; }
+    const finish = () => { clearTimeout(timer); signal.removeEventListener('abort', finish); resolve(); };
+    const timer = setTimeout(finish, ms);
+    signal.addEventListener('abort', finish, { once: true });
+  });
+}
+
 const isMutatingTool = (n: string) => /(?:propose_write|run_command)$/.test(n);
 
 /**
@@ -47,7 +56,7 @@ export class AgentController {
         fallback: cfg.fallback,
         retries: this.d.retries ?? 2,
         backoffMs: this.d.backoffMs ?? 1000,
-        sleep: this.d.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms))),
+        sleep: this.d.sleep ?? ((ms) => sleepForRetry(ms, this.abort.signal)),
         isCancelled: () => this.cancelled,
         canRetry: () => this.approvedOperations === 0,
         attempt: (agent) => this.attempt(agent, request, ui),
