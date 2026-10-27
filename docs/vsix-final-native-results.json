@@ -1,0 +1,9 @@
+{
+  "ok": true,
+  "evidence": [
+    "one native undo step restores CRLF content",
+    "Undo last works twice after editor close/reopen",
+    "Undo last preserves later manual edits",
+    "resolved ripgrep executable runs in the extension host"
+  ]
+}

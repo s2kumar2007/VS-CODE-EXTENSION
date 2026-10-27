@@ -11,6 +11,8 @@ export async function run(): Promise<void> {
   const root = vscode.workspace.workspaceFolders![0]!.uri.fsPath;
   const store = new DecisionStore(), undo = new UndoStack();
   const ext = vscode.extensions.getExtension('forge-agent-dev.forge-agent')!;
+  await ext.activate();
+  assert.equal(ext.isActive, true, 'installed bundled extension must activate without excluded dependencies');
   const api = new VsCodeEditorApi(root, findRg(ext.extensionPath), store, undo);
   const file = path.join(root, 'native.txt');
   const before = 'a\r\nb\r\nc\r\nd\r\n';

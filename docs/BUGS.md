@@ -43,3 +43,4 @@ Original line numbers refer to audited base commit 4ca90c9. Each defect was repo
 | P9-4 | agents/*.json | 35 | live turns spend extra provider requests discovering editor schemas | preload disabled for the known editor tools | preload editor schemas in all manifests | real-provider trace and SDK manifest regression |
 
 | P9-5 | src/agent/resilience.ts | 62 | quota recovery retries before provider wait expires | fixed backoff ignores retry hint | honor 429 retry text up to 60 seconds; Stop cancels waiting | test/resilience.test.ts quota window, cap and cancellation |
+| P9-6 | .vscodeignore | 1 | VSIX ships thousands of already bundled dependency files | package exclusions omit node_modules | exclude bundled modules, retain platform ripgrep | scripts/verify-vsix.py and installed activation/native tests |
