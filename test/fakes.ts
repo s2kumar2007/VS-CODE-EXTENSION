@@ -8,6 +8,7 @@ export type TurnScript = (input: any[], sessionAgent: string) => Ev[] | Promise<
 export class FakeTrueForge {
   sessions = new Map<string, string>(); // id -> agent
   cancels: string[] = [];
+  cancelHooks: (() => void)[] = [];
   inputs: any[][] = [];
   private n = 0;
   constructor(private scripts: Record<string, TurnScript[]>) {}
@@ -19,7 +20,7 @@ export class FakeTrueForge {
         this.sessions.set(id, agent.name);
         return { data: { id } };
       },
-      cancel: async (id: string) => { this.cancels.push(id); return {}; },
+      cancel: async (id: string) => { this.cancels.push(id); this.cancelHooks.forEach((h) => h()); return {}; },
       createTurnStream: async (id: string, { input }: { input: any[] }) => {
         const agent = this.sessions.get(id)!;
         this.inputs.push(input);
