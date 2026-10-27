@@ -8,7 +8,7 @@ export function runRg(rgPath: string, cwd: string, args: string[], timeoutMs = 1
   return new Promise((resolve, reject) => {
     const globs = EXCLUDES.flatMap((g) => ['--glob', g]);
     // Explicit "." path: without it rg may try to read stdin when spawned without a TTY.
-    const child = spawn(rgPath, [...globs, ...args], { cwd, stdio: ['ignore', 'pipe', 'pipe'] });
+    const child = spawn(rgPath, [...globs, ...args], { cwd, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
     let out = '';
     let err = '';
     const timer = setTimeout(() => child.kill(), timeoutMs);

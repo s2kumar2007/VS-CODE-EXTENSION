@@ -72,3 +72,12 @@ Typecheck, 72 tests, build passed. A 5,000-file / 10,000-line fixture checks act
 | P6-3 | src/context/assemble.ts:66 | explicit files <=120 lines pasted whole | bounded 40-line head + capped signatures | context.test.ts explicit mention |
 | P6-4 | src/context/vscodeDeps.ts:28 | context read can follow outside symlink | realpath containment | contextHost.test.ts |
 | P6-5 | src/panel/ChatPanel.ts:57 | Stop/second send during retrieval races model start | panel sending guard and abort check | contextHost.test.ts |
+
+## Phase 7 — Windows / macOS / Linux
+
+Typecheck, 74 tests, build passed on Windows x64. Native VS Code test host PASSED (docs/native-host-results.json): one native Undo restores a CRLF change; two Undo last operations after editor close/reopen; later manual edits preserved; ripgrep executes from extension host. Harness: test/native/index.ts, compiled with scripts/build-native-tests.cjs. Node child processes use windowsHide; commands use platform shell, taskkill tree on Windows / process groups on POSIX. Path display normalizes slashes. findRg uses createRequire at extension package.json to resolve the installed @vscode/ripgrep platform package without bundling its ESM entrypoint. esbuild output was executed in native host. VSIX must be built on the target platform with optional dependencies installed; no universal binary bundle claim. Three-OS CI added; Linux/macOS jobs are pending external execution, not claimed as passed locally.
+
+| ID | File and original line | Symptom / root cause | Fix | Regression |
+|---|---|---|---|---|
+| P7-1 | src/workspace/vscodeApi.ts:70 | sibling prefix accepted as workspace symbol | segment-aware containment + file scheme | editorSafety.test.ts |
+| P7-2 | src/workspace/vscodeApi.ts:21 | inherited npm target arch can select wrong binary | use running host architecture | editorSafety.test.ts; native host |

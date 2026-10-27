@@ -5,7 +5,7 @@ import { createRequire } from 'node:module';
 import type { DirEntry, EditorApi, RunResult, SearchHit, SymbolHit } from './types';
 import { rgSymbols, rgText } from './ripgrep';
 import { runShell } from './runCommand';
-import { resolveInsideReal, toRel } from './paths';
+import { resolveInside, resolveInsideReal, toRel } from './paths';
 import { DecisionStore, proposalKey } from '../review/decisions';
 import { applyHunks } from '../review/hunks';
 import { UndoStack } from '../review/undo';
@@ -15,7 +15,7 @@ export function findRg(extPath: string): string {
   const exe = process.platform === 'win32' ? 'rg.exe' : 'rg';
   try {
     const req = createRequire(path.join(extPath, 'package.json'));
-    return req.resolve(`@vscode/ripgrep-${process.platform}-${process.env.npm_config_arch || process.arch}/bin/${exe}`);
+    return req.resolve(`@vscode/ripgrep-${process.platform}-${process.arch}/bin/${exe}`);
   } catch { /* fall through */ }
   const app = vscode.env.appRoot;
   for (const p of [path.join(app, 'node_modules', '@vscode', 'ripgrep', 'bin', exe), path.join(app, 'node_modules.asar.unpacked', '@vscode', 'ripgrep', 'bin', exe)]) {
@@ -57,7 +57,7 @@ export class VsCodeEditorApi implements EditorApi {
     let hits: SymbolHit[] = [];
     try {
       const res = (await vscode.commands.executeCommand<vscode.SymbolInformation[]>('vscode.executeWorkspaceSymbolProvider', query)) ?? [];
-      hits = res.filter((s) => s.location.uri.fsPath.startsWith(this.rootDir)).map((s) => ({
+      hits = res.filter((s) => { try { resolveInside(this.rootDir, s.location.uri.fsPath); return s.location.uri.scheme === 'file'; } catch { return false; } }).map((s) => ({
         name: s.name, kind: KIND(s.kind), path: toRel(this.rootDir, s.location.uri.fsPath), line: s.location.range.start.line + 1,
       }));
     } catch { /* no provider: use fallback */ }

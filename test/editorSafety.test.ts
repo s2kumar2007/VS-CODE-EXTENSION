@@ -2,8 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
-const mock = vi.hoisted(() => ({ docs: new Map<string, string>(), calls: [] as any[], refuse: false }));
+const mock = vi.hoisted(() => ({ docs: new Map<string, string>(), calls: [] as any[], refuse: false, symbols: [] as any[] }));
 vi.mock('vscode', () => ({
+  commands: { executeCommand: async () => mock.symbols },
+  env: { appRoot: '' },
+  SymbolKind: { 0: 'File' },
   Uri: { file: (p: string) => ({ fsPath: p }) },
   Range: class { constructor(..._args: any[]) {} },
   WorkspaceEdit: class {
@@ -25,7 +28,7 @@ vi.mock('vscode', () => ({
     },
   },
 }));
-import { VsCodeEditorApi } from '../src/workspace/vscodeApi';
+import { VsCodeEditorApi, findRg } from '../src/workspace/vscodeApi';
 import { DecisionStore, proposalKey } from '../src/review/decisions';
 import { UndoStack } from '../src/review/undo';
 import { computeHunks } from '../src/review/hunks';
@@ -71,4 +74,18 @@ describe('editor write boundary and undo', () => {
     approve('','late'); api.cancelCommands(); expect(await api.applyProposal(file,'late')).toContain('REFUSED');
     expect(mock.docs.has(file)).toBe(false);
   });
+});
+
+
+it('rejects sibling workspace prefixes from language-server symbols',async()=>{
+  mock.symbols=[{name:'safe',kind:0,location:{uri:{scheme:'file',fsPath:path.join(root,'safe.py')},range:{start:{line:0}}}},{name:'outside',kind:0,location:{uri:{scheme:'file',fsPath:path.join(root+'-other','outside.py')},range:{start:{line:0}}}}];
+  // No accepted symbols means rg fallback; provide one valid symbol to avoid it.
+  const hits=await api.searchSymbols('safe',10);
+  expect(hits.map(h=>h.name)).toEqual(['safe']);
+});
+it('resolves the host binary even when npm_config_arch is inherited for another target',()=>{
+  const previous=process.env.npm_config_arch;
+  process.env.npm_config_arch='not-this-host';
+  try { expect(findRg(process.cwd())).toContain('ripgrep-'+process.platform+'-'+process.arch); }
+  finally { if(previous===undefined)delete process.env.npm_config_arch;else process.env.npm_config_arch=previous; }
 });
