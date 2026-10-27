@@ -22,6 +22,14 @@
       {
         "command": "forge.openPanel",
         "title": "Forge: Open Agent Panel"
+      },
+      {
+        "command": "forge.inlineEdit",
+        "title": "Forge: Inline Edit Selection"
+      },
+      {
+        "command": "forge.undoLast",
+        "title": "Forge: Undo last applied change"
       }
     ],
     "configuration": {
@@ -41,9 +49,22 @@
           "type": "string",
           "default": "forge-agent-fallback",
           "description": "Agent used when the primary fails (different model/provider)."
+        },
+        "forge.contextBudget": {
+          "type": "number",
+          "default": 6000,
+          "description": "Token budget (~4 chars/token) for automatically assembled context."
         }
       }
-    }
+    },
+    "keybindings": [
+      {
+        "command": "forge.inlineEdit",
+        "key": "ctrl+k ctrl+i",
+        "mac": "cmd+k cmd+i",
+        "when": "editorTextFocus && editorHasSelection"
+      }
+    ]
   },
   "scripts": {
     "build": "node esbuild.js",

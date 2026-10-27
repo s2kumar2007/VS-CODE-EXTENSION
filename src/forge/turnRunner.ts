@@ -1,29 +1,38 @@
 import { isEventDelta, mergeEventDelta } from '@truefoundry/trueforge-sdk';
 import type { TrueForge, TrueForgeApi } from '@truefoundry/trueforge-sdk';
+import type { ToolCallInfo } from '../agent/types';
 
-export type TurnStatus = 'done' | 'cancelled' | 'error';
+export type TurnEvents = Map<string, TrueForgeApi.TurnStreamingEvent>;
 
-/** What the UI cares about; keeps the webview decoupled from SDK event types. */
+export interface PendingApproval { toolCallId: string; threadId: string; sourceEventId: string }
+
+export interface TurnResult {
+  events: TurnEvents;
+  /** done | cancelled | error from turn.done; 'paused' when the turn stopped for approvals; 'unknown' if the stream just ended. */
+  status: 'done' | 'cancelled' | 'error' | 'paused' | 'unknown';
+  error?: string;
+  approvals: PendingApproval[];
+}
+
 export interface TurnHandlers {
   onTextDelta(messageId: string, text: string): void;
-  onToolCall(name: string, args: string): void;
-  onApprovalRequired(refs: { id: string; sourceEventId: string }[], events: Map<string, TrueForgeApi.TurnStreamingEvent>): void;
-  onDone(status: TurnStatus, error?: string): void;
+  onToolCall(name: string): void;
 }
 
 /**
- * Streams one turn. Contract (verified facts): stream opens with turn.created and
- * closes with turn.done. Cancellation ends the stream by itself, so we never
- * `break` the loop on cancel.
- * Events are kept in an id-keyed Map so deltas merge into their base message.
+ * Streams ONE turn. Contract: opens with turn.created, closes with turn.done. A cancel
+ * ends the stream by itself (we never `break` the loop). A gated tool call ends the turn
+ * with tool.approval_required; the caller resumes with a NEW turn (see AgentController).
+ * Events live in an id-keyed Map so streaming deltas merge into their base message.
  */
 export async function runTurn(
   client: TrueForge,
   sessionId: string,
   input: TrueForgeApi.TurnInputItem[],
   handlers: TurnHandlers,
-): Promise<Map<string, TrueForgeApi.TurnStreamingEvent>> {
-  const events = new Map<string, TrueForgeApi.TurnStreamingEvent>();
+): Promise<TurnResult> {
+  const events: TurnEvents = new Map();
+  const result: TurnResult = { events, status: 'unknown', approvals: [] };
   const stream = await client.sessions.createTurnStream(sessionId, { input });
 
   for await (const { data: event } of stream.withMetadata()) {
@@ -43,18 +52,41 @@ export async function runTurn(
 
     switch (event.type) {
       case 'model.message':
-        for (const tc of event.toolCalls ?? []) handlers.onToolCall(tc.function?.name ?? '?', tc.function?.arguments ?? '');
+        for (const tc of event.toolCalls ?? []) handlers.onToolCall(toolName(tc));
         break;
       case 'tool.approval_required':
-        // Stage 4 reviews propose_write here; the turn is over until we start a NEW turn with user.tool_approval.
-        handlers.onApprovalRequired(event.toolCalls.map((t) => ({ id: t.id, sourceEventId: t.sourceEventId })), events);
+        for (const ref of event.toolCalls) {
+          // The ref only has ids; the thread comes from the model message that issued the call.
+          const src = events.get(ref.sourceEventId);
+          const threadId = src && 'threadId' in src && typeof src.threadId === 'string' ? src.threadId : event.threadId;
+          result.approvals.push({ toolCallId: ref.id, threadId, sourceEventId: ref.sourceEventId });
+        }
+        result.status = 'paused';
         break;
       case 'turn.done':
-        handlers.onDone(event.state.status, event.state.status === 'error' ? event.state.message : undefined);
+        result.status = event.state.status;
+        if (event.state.status === 'error') result.error = event.state.message;
         break;
       default:
         break;
     }
   }
-  return events;
+  if (result.status === 'paused' && result.approvals.length === 0) result.status = 'unknown';
+  return result;
+}
+
+function toolName(tc: TrueForgeApi.ToolCall): string {
+  const info = tc.toolInfo as { name?: string } | undefined;
+  return info?.name ?? tc.function.name;
+}
+
+/** Looks up name + parsed arguments of a pending tool call from the model.message that issued it. */
+export function describeToolCall(events: TurnEvents, a: PendingApproval): ToolCallInfo | undefined {
+  const msg = events.get(a.sourceEventId);
+  if (!msg || msg.type !== 'model.message') return undefined;
+  const tc = msg.toolCalls?.find((t) => t.id === a.toolCallId);
+  if (!tc) return undefined;
+  let args: Record<string, unknown> = {};
+  try { args = JSON.parse(tc.function.arguments || '{}') as Record<string, unknown>; } catch { /* leave empty; handler denies */ }
+  return { name: toolName(tc), args };
 }

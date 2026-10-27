@@ -1,0 +1,113 @@
+import type { TrueForge, TrueForgeApi } from '@truefoundry/trueforge-sdk';
+import { describeToolCall, runTurn } from '../forge/turnRunner';
+import type { AgentUi, ApprovalHandler } from './types';
+import { CancelledError, ForgeFailure, runWithFallback } from './resilience';
+
+export interface ControllerDeps {
+  getClient: () => TrueForge;
+  approvals: ApprovalHandler;
+  agents: () => { primary: string; fallback?: string };
+  retries?: number;
+  backoffMs?: number;
+  sleep?: (ms: number) => Promise<void>;
+  /** Extra cleanup on cancel (e.g. discard queued proposals). */
+  onCancel?: () => void;
+}
+
+const isWriteTool = (n: string) => /propose_write$/.test(n);
+
+/**
+ * Drives one user request end to end: session -> turn -> (approvals -> new turn)* -> done.
+ * Independent of VS Code so it can be unit-tested with a fake TrueForge client.
+ */
+export class AgentController {
+  private running = false;
+  private cancelled = false;
+  private abort = new AbortController();
+  private sessionId: string | undefined;
+  private approvedWrites = 0;
+
+  constructor(private d: ControllerDeps) {}
+
+  get busy(): boolean { return this.running; }
+
+  async run(request: string, ui: AgentUi, agentOverride?: string): Promise<void> {
+    if (this.running) { ui.finished({ status: 'error', message: 'Forge is already working on a request.' }); return; }
+    this.running = true;
+    this.cancelled = false;
+    this.abort = new AbortController();
+    this.approvedWrites = 0;
+    const cfg = this.d.agents();
+    try {
+      const outcome = await runWithFallback<'done' | 'cancelled'>({
+        primary: agentOverride ?? cfg.primary,
+        fallback: cfg.fallback,
+        retries: this.d.retries ?? 2,
+        backoffMs: this.d.backoffMs ?? 1000,
+        sleep: this.d.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms))),
+        isCancelled: () => this.cancelled,
+        attempt: (agent) => this.attempt(agent, request, ui),
+        onRetry: (agent, n) => ui.notice(`Request to "${agent}" failed, retrying (${n})...`),
+        onFallback: () => ui.notice('Primary model failed, using fallback'),
+      });
+      ui.finished(outcome === 'cancelled' ? this.cancelInfo() : { status: 'done' });
+    } catch (e) {
+      if (e instanceof CancelledError) ui.finished(this.cancelInfo());
+      else {
+        const base = e instanceof ForgeFailure ? e.message : `Forge could not complete the request (${e instanceof Error ? e.message.split('\n')[0] : 'unknown error'}).`;
+        ui.finished({ status: 'error', message: `${base} ${this.approvedWrites ? `${this.approvedWrites} change(s) had already been applied; use "Forge: Undo last applied change" to revert.` : 'No changes were made to your workspace.'}` });
+      }
+    } finally {
+      this.running = false;
+      this.sessionId = undefined;
+    }
+  }
+
+  /** Stop: cancel the server run, abort local approvals, discard queued proposals, clear the review UI. */
+  async cancel(): Promise<void> {
+    if (!this.running) return;
+    this.cancelled = true;
+    this.abort.abort();
+    this.d.approvals.cancelAll();
+    this.d.onCancel?.();
+    const sid = this.sessionId;
+    if (sid) { try { await this.d.getClient().sessions.cancel(sid, {}); } catch { /* idempotent; stream ends by itself */ } }
+  }
+
+  private cancelInfo() {
+    return { status: 'cancelled' as const, message: this.approvedWrites ? `Cancelled - ${this.approvedWrites} change(s) were already applied before you stopped.` : 'Cancelled - no changes applied' };
+  }
+
+  private async attempt(agent: string, request: string, ui: AgentUi): Promise<'done' | 'cancelled'> {
+    const client = this.d.getClient();
+    const { data: session } = await client.sessions.create({ agent: { name: agent } });
+    this.sessionId = session.id;
+    let input: TrueForgeApi.TurnInputItem[] = [{ type: 'user.message', content: request }];
+
+    for (let round = 0; round < 200; round++) {
+      const res = await runTurn(client, session.id, input, {
+        onTextDelta: (id, t) => ui.textDelta(id, t),
+        onToolCall: (n) => ui.toolCall(n),
+      });
+      if (this.cancelled || res.status === 'cancelled') return 'cancelled';
+      if (res.status === 'error') throw new Error(res.error ?? 'the turn ended with an error');
+      if (res.status === 'paused') {
+        const items: TrueForgeApi.TurnInputItem[] = [];
+        for (const a of res.approvals) {
+          const info = describeToolCall(res.events, a);
+          const decision = info
+            ? await this.d.approvals.decide(info, this.abort.signal)
+            : { status: 'deny' as const, reason: 'Could not read the tool call arguments.' };
+          if (this.cancelled) return 'cancelled'; // nothing is sent after a cancel
+          if (decision.status === 'allow' && info && isWriteTool(info.name)) this.approvedWrites++;
+          items.push({ type: 'user.tool_approval', threadId: a.threadId, toolCallId: a.toolCallId, approval: decision });
+        }
+        input = items; // a resume turn must not mix user.message with approvals
+        continue;
+      }
+      if (res.status === 'done') return 'done';
+      throw new Error('the response stream ended unexpectedly');
+    }
+    throw new Error('too many approval rounds');
+  }
+}
