@@ -7,5 +7,6 @@ export function getConfig() {
     baseUrl: c.get<string>('baseUrl', 'http://localhost:8790'),
     agentName: c.get<string>('agentName', 'forge-agent'),
     fallbackAgentName: c.get<string>('fallbackAgentName', 'forge-agent-fallback'),
+    contextBudget: Math.max(500, c.get<number>('contextBudget', 6000)),
   };
 }

@@ -12,6 +12,7 @@ import { AgentController } from './agent/controller';
 import { ReviewApprovals } from './review/approvals';
 import { ReviewPanel } from './review/ReviewPanel';
 import { ProposalProvider, PROPOSAL_SCHEME } from './review/proposalProvider';
+import { WorkspaceContextDeps } from './context/vscodeDeps';
 import { inlineEdit } from './inline/inlineEdit';
 
 let mcp: EditorMcpServer | undefined;
@@ -22,6 +23,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
   const undo = new UndoStack();
   const api = root ? new VsCodeEditorApi(root, findRg(ctx.extensionUri.fsPath), store, undo) : undefined;
 
+  const ctxDeps = root && api ? new WorkspaceContextDeps(api, findRg(ctx.extensionUri.fsPath), root) : undefined;
   const provider = new ProposalProvider();
   ctx.subscriptions.push(vscode.workspace.registerTextDocumentContentProvider(PROPOSAL_SCHEME, provider));
 
@@ -37,7 +39,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
   });
 
   ctx.subscriptions.push(
-    vscode.commands.registerCommand('forge.openPanel', () => ChatPanel.show(ctx, controller)),
+    vscode.commands.registerCommand('forge.openPanel', () => { if (ctxDeps) ChatPanel.show(ctx, controller, ctxDeps); else void vscode.window.showWarningMessage('Forge: open a folder first.'); }),
     vscode.commands.registerCommand('forge.inlineEdit', () => inlineEdit(controller, 'forge-inline')),
     vscode.commands.registerCommand('forge.undoLast', async () => { if (api) void vscode.window.showInformationMessage('Forge: ' + await api.undoLast()); }),
   );

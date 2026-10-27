@@ -40,6 +40,37 @@ window.addEventListener('message', ({ data: m }) => {
       if (m.status === 'error') add('error', m.message || 'The request failed.');
       else if (m.status === 'cancelled') add('notice', m.message || 'Cancelled - no changes applied');
       break;
+    case 'context': {
+      const d = document.createElement('details'); d.className = 'msg notice';
+      const sm = document.createElement('summary'); sm.textContent = 'Context used (' + m.tokens + ' / ' + m.budget + ' tokens, ' + m.items.length + ' items)';
+      d.append(sm);
+      for (const it of m.items) { const r = document.createElement('div'); r.textContent = it.label + ' [' + it.tokens + ' tok] - ' + it.reason; d.append(r); }
+      log.appendChild(d); log.scrollTop = log.scrollHeight; break;
+    }
+    case 'suggestions': showSuggestions(m.items); break;
     case 'busy': sendBtn.disabled = m.value; stopBtn.disabled = !m.value; break;
   }
+});
+
+// --- @file / @symbol autocomplete: type "@" (or "@symbol:Name") and pick a suggestion ---
+const ac = document.getElementById('ac');
+function currentToken() {
+  const upto = input.value.slice(0, input.selectionStart);
+  const m = /@([^\s]*)$/.exec(upto);
+  return m ? { start: upto.length - m[0].length, text: m[1] } : undefined;
+}
+function showSuggestions(items) {
+  ac.textContent = '';
+  const tok = currentToken();
+  if (!tok || !items.length) { ac.style.display = 'none'; return; }
+  for (const it of items) {
+    const row = document.createElement('div'); row.className = 'ac-item'; row.textContent = it.label;
+    row.onclick = () => { input.value = input.value.slice(0, tok.start) + it.insert + ' ' + input.value.slice(input.selectionStart); ac.style.display = 'none'; input.focus(); };
+    ac.append(row);
+  }
+  ac.style.display = 'block';
+}
+input.addEventListener('input', () => {
+  const tok = currentToken();
+  if (tok) vscode.postMessage({ type: 'suggest', prefix: tok.text }); else ac.style.display = 'none';
 });
