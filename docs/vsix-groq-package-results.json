@@ -1,0 +1,15 @@
+{
+  "ok": true,
+  "file_count": 20,
+  "bytes": 2448940,
+  "sha256": "d4645950e0aaa7f35fc56c6e9a8768b23289989328dbfd22a0621aedd95e1ae6",
+  "runtime_dependency_files": [
+    "extension/node_modules/@vscode/ripgrep-win32-x64/LICENSE",
+    "extension/node_modules/@vscode/ripgrep-win32-x64/package.json",
+    "extension/node_modules/@vscode/ripgrep-win32-x64/README.md",
+    "extension/node_modules/@vscode/ripgrep-win32-x64/bin/rg.exe"
+  ],
+  "target": "win32-x64",
+  "installed_native_result": "vsix-groq-native-results.json",
+  "groq_live_setup": "pending local credential"
+}

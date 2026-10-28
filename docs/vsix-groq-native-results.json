@@ -1,0 +1,11 @@
+{
+  "ok": true,
+  "evidence": [
+    "one native undo step restores CRLF content",
+    "Undo last works twice after editor close/reopen",
+    "Undo last preserves later manual edits",
+    "resolved ripgrep executable runs in the extension host"
+  ],
+  "vsix_sha256": "d4645950e0aaa7f35fc56c6e9a8768b23289989328dbfd22a0621aedd95e1ae6",
+  "activation_note": "Bundled extension activated; full agent setup awaits local Groq credential."
+}

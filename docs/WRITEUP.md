@@ -50,7 +50,7 @@ TrueForge 0.180.1, TS SDK 0.180.0, VS Code native extension test host, MCP SDK, 
 
 ## 8. Known limitations
 
-- The exact inline Task C passed in the real native-host harness with an unreachable primary, fresh fallback and rejected proposals; its checkout stayed clean. Tasks A/B remain subject to account rate limits; no accepted model edits are claimed. Dynamic subagents are enabled, not claimed as observed without event evidence.
+- The exact inline Task C passed in the real native-host harness with an unreachable primary, fresh fallback and rejected proposals; its checkout stayed clean. Tasks A/B remain subject to account rate limits; no successful A/B model edits are claimed. Dynamic subagents are enabled, not claimed as observed without event evidence.
 - run_command executes with user permissions. Path preflight catches explicit escapes but cannot sandbox arbitrary code or guarantee outside files are untouched. Approved command effects cannot be rolled back.
 - Before approval, failures use exponential retries then fallback in a fresh session. After any write/command approval, replay stops to prevent duplication; uncertain effects are reported. Failure/Stop can retain already approved changes.
 - One folder and one active request. Each user request creates a fresh session; approval resumes reuse it. The shared forge-editor registration does not isolate multiple windows on one server.

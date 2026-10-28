@@ -9,3 +9,6 @@ esbuild.js
 
 node_modules/**
 !node_modules/@vscode/ripgrep-*/**
+
+output/**
+tmp/**

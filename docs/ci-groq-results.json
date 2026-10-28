@@ -1,0 +1,26 @@
+{
+  "sha": "7d4bbf9bd9e16325bacf5a1cffbcd8b650451b33",
+  "url": "https://github.com/s2kumar2007/VS-CODE-EXTENSION/actions/runs/40690957798",
+  "status": "completed",
+  "conclusion": "success",
+  "jobs": [
+    {
+      "name": "verify (macos-latest)",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/s2kumar2007/VS-CODE-EXTENSION/actions/runs/40690957798/job/122825313865"
+    },
+    {
+      "name": "verify (windows-latest)",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/s2kumar2007/VS-CODE-EXTENSION/actions/runs/40690957798/job/122825314005"
+    },
+    {
+      "name": "verify (ubuntu-latest)",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/s2kumar2007/VS-CODE-EXTENSION/actions/runs/40690957798/job/122825314110"
+    }
+  ]
+}

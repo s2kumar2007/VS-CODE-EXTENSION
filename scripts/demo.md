@@ -1,10 +1,10 @@
 # Demo script — Flask 3.1.3
 
-Use disposable checkouts. Never reset a working repository that contains your own changes. Current follow-up status: providers were configured; the earlier greeting-based bad-key probe passed, but the official inline Task C is still unverified. Tasks A/B have encountered account quota limits; inspect the latest audit/evidence before claiming success.
+Use disposable checkouts. Never reset a working repository that contains your own changes. Current follow-up status: the exact inline Task C passed in the automated native-host harness; its required manual recording is pending. Groq fallback is staged and requires local credential setup. Tasks A/B have encountered account quota limits; inspect the latest audit/evidence before claiming success.
 
 ## Setup
 
-1. Follow README: npm ci, typecheck, test, build. Start TrueForge and configure both model aliases.
+1. Follow README: npm ci, typecheck, test, build. Start TrueForge and configure the Google models and Groq fallback as documented.
 2. Clone https://github.com/pallets/flask.git and checkout tag 3.1.3. git rev-parse HEAD must report 22d924701a6ae2e4cd01e9a15bbaf3946094af65.
 3. python -m venv .venv. Activate with .venv\Scripts\Activate.ps1 in PowerShell, or source .venv/bin/activate on macOS/Linux. Install with python -m pip install -e . pytest.
 4. Open Flask in the extension development host. Check git status --short is empty. Record start time, TrueForge session id, configured model aliases and the initial git status.
