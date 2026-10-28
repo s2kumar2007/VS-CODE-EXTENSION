@@ -43,11 +43,11 @@ export async function run(): Promise<void> {
  record.stage='registering MCP';await save();
  await registerMcpServer(client,mcp.url,mcp.token);
  record.stage='loading agents';await save();
- const agents=(await loadAgentFiles(path.join(ext.extensionPath,'agents'))).filter(a=>a.name!=='forge-agent-fallback');
- for(const agent of agents)agent.manifest.model.name=process.env.FORGE_LIVE_MODEL ?? agent.manifest.model.name;
+ const agents=(await loadAgentFiles(path.join(ext.extensionPath,'agents'))).filter(a=>a.name!=='forge-agent-fallback'||!!process.env.FORGE_LIVE_FALLBACK);
+ for(const agent of agents)if(agent.name!=='forge-agent-fallback')agent.manifest.model.name=process.env.FORGE_LIVE_MODEL ?? agent.manifest.model.name;
  record.stage='synchronizing agents';record.effectiveModels=agents.map(a=>a.manifest.model.name);await save();
  const synced=await syncAgents(client,agents);if(synced.some(a=>!a.ok))throw new Error(JSON.stringify(synced));
- const controller=new AgentController({getClient:()=>client,approvals,agents:()=>({primary:task==='C'?'forge-audit-invalid':'forge-agent',fallback:task==='C'?'forge-agent':undefined}),onRunStart:()=>api.beginRun(),onCancel:()=>api.cancelCommands()});
+ const controller=new AgentController({getClient:()=>client,approvals,agents:()=>({primary:task==='C'?'forge-audit-invalid':'forge-agent',fallback:task==='C'?'forge-agent':process.env.FORGE_LIVE_FALLBACK}),onRunStart:()=>api.beginRun(),onCancel:()=>api.cancelCommands()});
  let prompt='Reply with a short greeting. Do not edit files or run commands.';
  if(task==='A'||task==='C'){
  const text=(await api.readText(path.join(root,'src/flask/helpers.py')))!;const lines=text.split('\n');const start=lines.findIndex(l=>l.startsWith('def get_debug_flag'));let end=start+1;while(end<lines.length&&!lines[end]!.startsWith('def get_load_dotenv'))end++;

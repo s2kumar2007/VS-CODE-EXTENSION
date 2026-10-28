@@ -24,9 +24,9 @@ The default 6000-token limit is a chars/4 estimate of the rendered CONTEXT block
 
 ## 5. Model setup
 
-The local account now has Google configured with model aliases gemini-3-5-flash and gemini-2-5-flash. The primary uses google-gemini/gemini-3-5-flash; inline and fallback use google-gemini/gemini-2-5-flash. The same provider credential supports both models, so this configuration covers model failures but not a Google-wide outage. A valid independent-provider credential was not available.
+Primary and inline remain Google Gemini (google-gemini/gemini-3-5-flash and google-gemini/gemini-2-5-flash). The user requested an independent Groq fallback; its committed manifest now points to groq/gpt-oss-120b, provider model openai/gpt-oss-120b. No Groq key is currently available locally, so activation and real Groq validation are pending. scripts/configure-groq.ps1 prompts privately; its helper verifies generation, stores the credential only in TrueForge settings, preserves other models and synchronizes agents. No provider credentials are committed.
 
-Generation succeeded on both configured models. Gemini 3.8 was listed but returned HTTP 503; tool turns also encountered Google's five-requests/minute free-tier quota. The live invalid-key test used a disposable OpenAI-compatible provider, retried twice, and completed through a fresh Gemini 2.5 fallback session (docs/live-C.json and docs/live-C-sessions.json). No credentials are committed. Provider cost remains unknown, not zero. See docs/LIVE_TESTS.md for exact automated live-test scope.
+Google authentication and exact Task C fallback succeeded. Live A/B encountered HTTP 429: five free-tier requests per minute and 20 per day; the latest Gemini 2.5 response reports roughly 18h19m to reset. A later proposal overescaped quotes throughout helpers.py, so it failed Python parsing and is not counted as a pass. Its generated edit was restored in the disposable checkout. The harness now checks function scope and Python syntax before approval and independently verifies resulting behavior. Provider cost remains unknown. See docs/LIVE_TESTS.md for exact automated scope.
 
 ## 6. Scorecard
 

@@ -1,9 +1,9 @@
 {
   "name": "forge-agent-fallback",
-  "description": "Fallback Forge model on the configured Google provider; model-level recovery, not provider outage isolation.",
+  "description": "Forge fallback coding agent using Groq when the primary Gemini model fails.",
   "manifest": {
     "model": {
-      "name": "google-gemini/gemini-2-5-flash",
+      "name": "groq/gpt-oss-120b",
       "params": {
         "temperature": 0.2
       }

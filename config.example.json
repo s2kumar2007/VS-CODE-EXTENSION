@@ -1,23 +1,33 @@
 {
-  "_comment": "Placeholders only. Add both models to the same Google provider. This is a checklist, not an importable manifest.",
+  "_comment": "Placeholders only. Configure provider credentials locally using TrueForge or the secure helper; never save real keys here. This is a checklist, not an import manifest.",
   "forge.baseUrl": "http://localhost:8790",
   "forge.agentName": "forge-agent",
   "forge.fallbackAgentName": "forge-agent-fallback",
-  "trueforgeModelProvider": {
-    "type": "google-gemini",
-    "auth": {
-      "api_key": "<YOUR_GEMINI_KEY>"
+  "providers": [
+    {
+      "type": "google-gemini",
+      "models": [
+        {
+          "name": "gemini-3-5-flash",
+          "model_id": "gemini-3.5-flash"
+        },
+        {
+          "name": "gemini-2-5-flash",
+          "model_id": "gemini-2.5-flash"
+        }
+      ]
     },
-    "models": [
-      {
-        "name": "gemini-3-5-flash",
-        "model_id": "gemini-3.5-flash"
-      },
-      {
-        "name": "gemini-2-5-flash",
-        "model_id": "gemini-2.5-flash"
-      }
-    ]
-  },
-  "limitation": "Both models share one provider; use a valid independent provider for outage isolation."
+    {
+      "type": "custom",
+      "name": "groq",
+      "base_url": "https://api.groq.com/openai/v1",
+      "models": [
+        {
+          "name": "gpt-oss-120b",
+          "model_id": "openai/gpt-oss-120b"
+        }
+      ]
+    }
+  ],
+  "credentialSetup": "Run scripts/configure-groq.ps1 locally. Credentials are stored by TrueForge, not in this file."
 }

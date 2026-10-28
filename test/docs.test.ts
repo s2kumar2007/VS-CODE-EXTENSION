@@ -10,7 +10,7 @@ describe('submission documentation contracts',()=>{
     const agents=await loadAgentFiles('agents');const readme=await fs.readFile('README.md','utf8');
     for(const agent of agents)expect(readme).toContain(agent.manifest.model.name);
     expect(agents.find(a=>a.name==='forge-agent')?.manifest.model.name).toBe('google-gemini/gemini-3-5-flash');
-    expect(agents.find(a=>a.name==='forge-agent-fallback')?.manifest.model.name).toBe('google-gemini/gemini-2-5-flash');
+    expect(agents.find(a=>a.name==='forge-agent-fallback')?.manifest.model.name).toBe('groq/gpt-oss-120b');
   });
 });
 
