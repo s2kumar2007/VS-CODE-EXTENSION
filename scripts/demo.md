@@ -1,6 +1,6 @@
 # Demo script — Flask 3.1.3
 
-Use disposable checkouts. Never reset a working repository that contains your own changes. Current follow-up status: providers are configured; live bad-key Task C passed in the automated native harness. Tasks A/B have encountered account quota limits; inspect the latest audit/evidence before claiming success.
+Use disposable checkouts. Never reset a working repository that contains your own changes. Current follow-up status: providers were configured; the earlier greeting-based bad-key probe passed, but the official inline Task C is still unverified. Tasks A/B have encountered account quota limits; inspect the latest audit/evidence before claiming success.
 
 ## Setup
 
@@ -43,7 +43,7 @@ Use another fresh disposable checkout so Task A changes do not affect the result
 Use a disposable TrueForge configuration/instance for deliberately invalid credentials or endpoints; preserve the user's working provider configuration.
 
 1. First leave TrueForge stopped. Reload the development host; activation must show a clear warning and remain usable. Start TrueForge and send a request: setup retries without requiring another reload.
-2. Configure an invalid primary key or unreachable provider URL; leave the fallback valid. Send a read-only request. Observe 1s/2s retries, then Primary model failed, using fallback in a fresh session. The editor stays responsive.
+2. Configure an invalid primary key or unreachable provider URL; leave the fallback valid. Repeat the exact Task A inline-edit request above on the selected get_debug_flag function. Observe retries, then Primary model failed, using fallback in a fresh session. Ordinary retries use 1s/2s backoff; a provider's retry hint can extend each wait up to 60 seconds. The editor stays responsive. Reject any proposed edit so this failure demo leaves the checkout unchanged.
 3. Break both disposable providers. Expect one concise final error without a user-visible stack. Inspect local extension-host logs for the exact underlying error/trace and redact secrets before recording.
 4. Before any write/command approval, git status --short remains empty. After approval, failures/Stop can retain authorized effects: the UI must report uncertainty, and must not replay the request automatically.
 5. Restore the disposable setup. Test Stop mid-stream, while a diff is open, and during command confirmation; no unused approvals or Forge review tabs should remain. A running confirmed command's process tree must stop. Already completed command effects are not rolled back.

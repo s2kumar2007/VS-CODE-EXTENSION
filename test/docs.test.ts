@@ -34,3 +34,11 @@ it('maps every organizer criterion and preserves the official 100-point weights'
  expect(rubric.source.sha256).toMatch(/^[a-f0-9]{64}$/);
  expect(rubric.source.url).toBe('https://techfest.org/media/compiProbStatement/TrueFoundry_Forge-a-thon_compressed_UvvRJ9C.pdf');
 });
+
+it('uses the official inline request for the failure demo rather than the greeting probe',async()=>{
+ const demo=await fs.readFile('scripts/demo.md','utf8');
+ const failure=demo.split(/## Task C\b/)[1]!.split('## Automated evidence')[0]!;
+ expect(failure).toContain('Repeat the exact Task A inline-edit request');
+ expect(failure).not.toContain('Send a read-only request');
+ expect(demo).not.toContain('live bad-key Task C passed');
+});
