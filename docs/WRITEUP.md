@@ -2,7 +2,7 @@
 
 ## 1. Team
 
-Verified repository owner: Sunil Kumar (GitHub: s2kumar2007). Team name, other members and role assignments are unconfirmed. The owner authorized using verified details only; no additional team identity is inferred.
+Team members (provided by the user): B. Sunil Kumar, Eric Bejoy, Sreekeerthana Adapa, and Samyuktha BR. Team name, institution, and individual roles have not been supplied. Repository owner: s2kumar2007.
 
 ## 2. Starting point (from scratch)
 
@@ -42,7 +42,7 @@ Official weights and definitions are sourced in docs/official-rubric.json and do
 | B3 Resilience | 10 | Not recorded | Earlier greeting probe demonstrates fallback only; exact Task C rerun pending. |
 | B4 TrueForge integration depth | 10 | Not recorded | Wire/MCP tests pass. Subagent/compaction flags alone do not establish top-anchor behavior. |
 | C1 Video | 10 | Not recorded | Video not supplied; no credit claimed. |
-| C2 Write-up | 15 | Not recorded | Markdown draft exists; team institution, final PDF and video timestamps remain unconfirmed. |
+| C2 Write-up | 15 | Not recorded | Three-page PDF prepared; institution and video timestamps remain unconfirmed. |
 
 ## 7. Tools used
 

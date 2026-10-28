@@ -12,7 +12,7 @@ Source: [Techfest Forge-a-thon problem statement](https://techfest.org/media/com
 | B3 | 10 | Resilience | src/agent/resilience.ts; docs/live-C.json; docs/live-C-sessions.json | Task C: repeat the Task A request against a failed provider and show unchanged git status. | Earlier greeting probe demonstrates fallback only; exact Task C rerun pending. |
 | B4 | 10 | TrueForge integration depth | src/mcp; src/forge; agents; test/contract.test.ts | Show MCP approval and an observed context-engineering feature in the session. | Wire/MCP tests pass. Subagent/compaction flags alone do not establish top-anchor behavior. |
 | C1 | 10 | Video | scripts/demo.md | A, B, C in order, visible checks and the B session, within four minutes. | Video not supplied; no credit claimed. |
-| C2 | 15 | Write-up | docs/WRITEUP.md | Submit a 1–3 page PDF with eight ordered sections and timestamped scorecard. | Markdown draft exists; team institution, final PDF and video timestamps remain unconfirmed. |
+| C2 | 15 | Write-up | docs/WRITEUP.md | Submit a 1–3 page PDF with eight ordered sections and timestamped scorecard. | Three-page PDF prepared; institution and video timestamps remain unconfirmed. |
 
 The nine criteria total 100 points: A=30, B=45, C=25. Actual behavior must be visible to the judges; tests do not replace the prescribed video. The eligibility gate requires the TrueForge loop and MCP editor tools, local reproducibility, provider independence, committed definitions, and the Task B session in the demo.
 
