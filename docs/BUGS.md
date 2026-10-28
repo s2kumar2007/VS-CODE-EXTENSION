@@ -49,3 +49,5 @@ Original line numbers refer to audited base commit 4ca90c9. Each defect was repo
 | P10-2 | test/native/live.ts | 41 | greeting probe mislabeled as fixed Task C | C did not reuse the inline request | repeat Task A prompt and require a clean checkout even after expected failure | exact native Task C rerun; runner checks prompt, error and git status |
 
 | P11-1 | scripts/demo.md | 46 | manual failure demo still requests read-only text and claims the greeting probe as fixed Task C | script not updated with official scenario | repeat Task A, reject proposals, distinguish generic probe | test/docs.test.ts official inline demo regression |
+
+| P11-2 | test/native/live.ts | 32 | automated inline review accepts unrelated/invalid edits in the permitted file | approval scope checks filename only | require unchanged text outside get_debug_flag and valid Python; runner checks actual files and behavior | test/livePolicy.test.ts; live-A-25-validation.json captures the rejected result |

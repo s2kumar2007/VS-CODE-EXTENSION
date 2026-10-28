@@ -17,7 +17,7 @@
       "focus": "Inline edit",
       "evidence": "src/inline/inlineEdit.ts; src/review/ReviewPanel.ts",
       "demo": "Task A: show the editor diff and accept/reject individual hunks.",
-      "status": "Live A blocked by daily quota; native mechanisms pass."
+      "status": "Live A blocked by provider rate limits; native mechanisms pass."
     },
     {
       "id": "A2",
@@ -25,7 +25,7 @@
       "focus": "Agent mode",
       "evidence": "src/panel/ChatPanel.ts; src/agent/controller.ts",
       "demo": "Task B: discover and edit at least three files from the filename-free request.",
-      "status": "Live B blocked by daily quota."
+      "status": "Live B blocked by provider rate limits."
     },
     {
       "id": "A3",
@@ -55,9 +55,9 @@
       "id": "B3",
       "points": 10,
       "focus": "Resilience",
-      "evidence": "src/agent/resilience.ts; docs/live-C.json; docs/live-C-sessions.json",
+      "evidence": "src/agent/resilience.ts; docs/live-C-official-recheck.json; docs/live-reset-sessions.json; docs/live-reset-workspaces.json",
       "demo": "Task C: repeat the Task A request against a failed provider and show unchanged git status.",
-      "status": "Earlier greeting probe demonstrates fallback only; exact Task C rerun pending."
+      "status": "Exact inline Task C passed in the real native-host harness: unreachable primary, two retries, fresh fallback, rejected proposals, clean checkout; video pending."
     },
     {
       "id": "B4",
@@ -81,7 +81,7 @@
       "focus": "Write-up",
       "evidence": "docs/WRITEUP.md",
       "demo": "Submit a 1–3 page PDF with eight ordered sections and timestamped scorecard.",
-      "status": "Three-page PDF prepared; institution and video timestamps remain unconfirmed."
+      "status": "Three-page PDF prepared with supplied team details; video timestamps pending."
     }
   ]
 }

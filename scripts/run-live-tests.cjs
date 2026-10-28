@@ -48,7 +48,21 @@ if (!['A','B','C'].includes(task) || !workspace || !model || !codeExe || !result
       const changed = new Set(evidence.reviews.filter(r=>r.allowed).map(r=>r.path));
       if (task === 'A' && !changed.has('src/flask/helpers.py')) throw new Error('Inline proposal was not reviewed');
       if (task === 'B' && changed.size < 3) throw new Error('Fewer than three reviewed files');
-      console.log('Live '+task+' completed. Independently verify behavior with scripts/verify-flask-demo.py.');
+      if (task !== 'C') {
+        const changedFiles=execFileSync('git',['-C',root,'diff','--name-only'],{encoding:'utf8',windowsHide:true}).trim().split(/\r?\n/).filter(Boolean);
+        if(task==='A'&&(changedFiles.length!==1||changedFiles[0]!=='src/flask/helpers.py'))throw new Error('Inline changed files outside its target');
+        if(task==='B'&&changedFiles.length<3)throw new Error('Fewer than three actual changed files');
+        try {
+          const output=execFileSync(process.env.FORGE_PYTHON||'python',['scripts/verify-flask-demo.py',task],{cwd:process.cwd(),env:{...process.env,PYTHONPATH:path.join(root,'src')},encoding:'utf8',windowsHide:true,timeout:60000});
+          evidence.verification={status:'passed',changedFiles,output};
+        } catch(error) {
+          evidence.verification={status:'failed',changedFiles,output:String(error.stdout||''),error:String(error.stderr||error.message)};
+          await fs.writeFile(path.resolve(result),JSON.stringify(evidence,null,2));
+          throw new Error('Independent Flask behavior verification failed');
+        }
+        await fs.writeFile(path.resolve(result),JSON.stringify(evidence,null,2));
+      }
+      console.log('Live '+task+' completed and independently verified.');
     } catch(error) {console.error(error);process.exitCode=1;}
   });
 })().catch(error=>{console.error(error);process.exitCode=1;});

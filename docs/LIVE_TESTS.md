@@ -26,3 +26,9 @@ Provider availability is not established by listing model IDs: require a success
 Final reruns also hit the 20-requests/day free-tier limit on both models; approximately 13h44m reset waits were reported. Do not repeatedly rerun against an exhausted daily quota. Wait for reset or configure an independently available provider. Raw prompt/context evidence includes Flask source snippets; see FLASK-LICENSE.txt.
 
 Official-brief correction: Task C must repeat the Task A inline request, not a greeting. The current harness does so, and accepts a clear expected error only when git status stays empty. Historical live-C.json is retained as generic greeting/fallback evidence and does not establish the prescribed Task C. The authoritative scoring table is now in docs/RUBRIC.md.
+
+## 28 October reset recheck
+
+A on Gemini 3.5 and B on Gemini 2.5 reached real providers but ended with HTTP 429 before review or mutation. Exact terminal events and session ids are in live-reset-sessions.json; controller records are live-A-reset-recheck.json and live-B-reset-recheck.json. These are automated native-host runs, not recorded manual UI demos.
+
+The corrected official Task C repeats the exact inline instruction. A disposable custom provider points to unreachable http://127.0.0.1:1/v1 with a deliberately invalid test credential. Three distinct failed primary sessions are followed by a fresh Gemini 2.5 fallback session, which proposed the target edit. The harness rejected all proposals and the run ended done. git status remained empty. See live-C-official-recheck.json and live-reset-workspaces.json. The disposable agent/provider were deleted; real provider credentials were neither read into evidence nor changed.

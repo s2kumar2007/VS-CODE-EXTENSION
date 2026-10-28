@@ -2,7 +2,7 @@
 
 ## 1. Team
 
-Team members (provided by the user): B. Sunil Kumar, Eric Bejoy, Sreekeerthana Adapa, and Samyuktha BR. Team name, institution, and individual roles have not been supplied. Repository owner: s2kumar2007.
+Team: Git Push. Institution: VIT Vellore. Members: B. Sunil Kumar, Eric Bejoy, Sreekeerthana Adapa, and Samyuktha BR (details supplied by the user). Individual roles are unspecified. Repository owner: s2kumar2007.
 
 ## 2. Starting point (from scratch)
 
@@ -34,15 +34,15 @@ Official weights and definitions are sourced in docs/official-rubric.json and do
 
 | Criterion | Maximum | Video timestamp | Evidence / honest claim |
 |---|---:|---|---|
-| A1 Inline edit | 10 | Not recorded | Live A blocked by daily quota; native mechanisms pass. |
-| A2 Agent mode | 10 | Not recorded | Live B blocked by daily quota. |
+| A1 Inline edit | 10 | Not recorded | Live A blocked by provider rate limits; native mechanisms pass. |
+| A2 Agent mode | 10 | Not recorded | Live B blocked by provider rate limits. |
 | A3 Streaming and cancellation | 10 | Not recorded | Automated tests pass; required video not recorded. |
 | B1 Context assembly | 15 | Not recorded | Budget/retrieval tests pass; live trace selects 22 items within 6000 estimated tokens. |
 | B2 Diff safety | 10 | Not recorded | Installed native tests pass; video not recorded. |
-| B3 Resilience | 10 | Not recorded | Earlier greeting probe demonstrates fallback only; exact Task C rerun pending. |
+| B3 Resilience | 10 | Not recorded | Exact inline Task C passed in the real native-host harness: unreachable primary, two retries, fresh fallback, rejected proposals, clean checkout; video pending. |
 | B4 TrueForge integration depth | 10 | Not recorded | Wire/MCP tests pass. Subagent/compaction flags alone do not establish top-anchor behavior. |
 | C1 Video | 10 | Not recorded | Video not supplied; no credit claimed. |
-| C2 Write-up | 15 | Not recorded | Three-page PDF prepared; institution and video timestamps remain unconfirmed. |
+| C2 Write-up | 15 | Not recorded | Three-page PDF prepared with supplied team details; video timestamps pending. |
 
 ## 7. Tools used
 
@@ -50,7 +50,7 @@ TrueForge 0.180.1, TS SDK 0.180.0, VS Code native extension test host, MCP SDK, 
 
 ## 8. Known limitations
 
-- The earlier greeting-based failure probe passed; the prescribed inline failure case still needs verification. Tasks A/B remain subject to the account free-tier quotas; no successful model edits are claimed. Dynamic subagents are enabled, not claimed as observed without event evidence.
+- The exact inline Task C passed in the real native-host harness with an unreachable primary, fresh fallback and rejected proposals; its checkout stayed clean. Tasks A/B remain subject to account rate limits; no accepted model edits are claimed. Dynamic subagents are enabled, not claimed as observed without event evidence.
 - run_command executes with user permissions. Path preflight catches explicit escapes but cannot sandbox arbitrary code or guarantee outside files are untouched. Approved command effects cannot be rolled back.
 - Before approval, failures use exponential retries then fallback in a fresh session. After any write/command approval, replay stops to prevent duplication; uncertain effects are reported. Failure/Stop can retain already approved changes.
 - One folder and one active request. Each user request creates a fresh session; approval resumes reuse it. The shared forge-editor registration does not isolate multiple windows on one server.

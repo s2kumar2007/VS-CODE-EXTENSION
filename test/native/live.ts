@@ -2,6 +2,8 @@
 import * as vscode from 'vscode';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { isScopedInlineProposal } from './reviewPolicy';
 import { AgentController } from '../../src/agent/controller';
 import { createClient, registerMcpServer } from '../../src/forge/client';
 import { loadAgentFiles, syncAgents } from '../../src/forge/agents';
@@ -26,8 +28,10 @@ export async function run(): Promise<void> {
  const save=()=>fs.writeFile(output,JSON.stringify(record,null,2));
  const approvals=new ReviewApprovals({root,store,readText:p=>api.readText(p),ui:{
  async reviewHunks(req,signal) {
- const allowed=task==='A'?req.relPath==='src/flask/helpers.py':task==='B'&&['src/flask/cli.py','tests/test_cli.py','docs/cli.rst'].includes(req.relPath);
- record.reviews.push({path:req.relPath,rationale:req.rationale,hunks:req.hunks.length,allowed});await save();
+ let allowed=task==='A'?req.relPath==='src/flask/helpers.py'&&isScopedInlineProposal(req.oldText,req.newText):task==='B'&&['src/flask/cli.py','tests/test_cli.py','docs/cli.rst'].includes(req.relPath);
+ let rejectionReason=allowed?'':task==='C'?'Failure demo deliberately rejects all writes.':'Proposal is outside the allowed file/function scope.';
+ if(allowed&&req.relPath.endsWith('.py'))try{execFileSync(process.env.FORGE_PYTHON??'python',['-c','import ast,sys; ast.parse(sys.stdin.read())'],{input:req.newText,encoding:'utf8',windowsHide:true,timeout:10000,stdio:['pipe','pipe','pipe']});}catch{allowed=false;rejectionReason='Python syntax validation failed; nothing approved.';}
+ record.reviews.push({path:req.relPath,rationale:req.rationale,hunks:req.hunks.length,allowed,rejectionReason});await save();
  return allowed&&!signal.aborted?req.hunks.map(h=>h.id):[];
  },
  async confirmCommand(command){record.commands.push({command,allowed:false});await save();return false;},close(){},

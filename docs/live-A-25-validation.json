@@ -1,0 +1,7 @@
+{
+  "passed": false,
+  "reason": "Model proposal overescaped quotes across helpers.py; live harness accepted all hunks within the allowed file, including changes outside selected function.",
+  "syntax_error": "SyntaxError: unexpected character after line continuation character at helpers.py:29",
+  "diff_stat": "1 file changed, 84 insertions(+), 83 deletions(-)",
+  "recovery": "Preserved diff in scratch, then restored only the generated helpers.py change in the disposable checkout."
+}
