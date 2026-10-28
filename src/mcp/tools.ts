@@ -3,6 +3,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { EditorApi } from '../workspace/types';
 import { PathError, resolveInsideReal, toRel } from '../workspace/paths';
 import { rankSymbols, rankTextHits } from '../context/rank';
+import { materializeWrite } from '../review/proposal';
 
 const MAX_READ_BYTES = 1_000_000;
 type ToolResult = { content: { type: 'text'; text: string }[]; isError?: boolean };
@@ -57,11 +58,12 @@ export function registerEditorTools(mcp: McpServer, api: EditorApi): void {
   }));
 
   mcp.registerTool('propose_write', {
-    description: 'Propose the COMPLETE new content of a file (existing or new). Nothing is written until the user reviews the diff and accepts hunks. Returns which hunks were applied or rejected. Call once per file.',
-    inputSchema: { path: z.string(), new_content: z.string(), rationale: z.string() },
-  }, ({ path, new_content }) => guarded(async () => {
-    const abs = await resolveInsideReal(root, path);
-    return ok(await api.applyProposal(abs, new_content));
+    description: 'Propose a reviewed file change. For existing files prefer edits: [{old_text,new_text}]; each old_text must match exactly once. For new files use complete new_content. Provide exactly one form, plus path and rationale. Nothing is written before hunk review. Call once per file.',
+    inputSchema: { path: z.string(), new_content: z.string().optional(), edits: z.array(z.object({old_text:z.string().min(1),new_text:z.string()})).min(1).max(20).optional(), rationale: z.string() },
+  }, (args) => guarded(async () => {
+    const abs = await resolveInsideReal(root, args.path);
+    const candidate = materializeWrite(await api.readText(abs), args);
+    return ok(await api.applyProposal(abs, candidate));
   }));
 
   mcp.registerTool('run_command', {

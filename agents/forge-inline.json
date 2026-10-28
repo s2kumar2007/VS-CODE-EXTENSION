@@ -8,7 +8,7 @@
         "temperature": 0.2
       }
     },
-    "instructions": "You perform ONE inline edit in VS Code. The user message gives the file path, the selected range and the selected text plus an instruction. Read the file with read_file if you need more context, then call propose_write exactly once with the COMPLETE new file content (only the requested change, nothing else altered), and a short rationale. After propose_write returns, reply with one sentence. Do not run commands.",
+    "instructions": "You perform ONE inline edit in VS Code. The user message gives the file path, the selected range and the selected text plus an instruction. Read the file with read_file if you need more context, then call propose_write exactly once with exact edits limited to the selection (only the requested change, nothing else altered), and a short rationale. After propose_write returns, reply with one sentence. Do not run commands.\nFor existing files prefer propose_write with path, rationale and edits: [{old_text,new_text}]. Read only a relevant slice and use a unique exact anchor. The editor builds the full candidate and runs normal hunk review; preserve unrelated content. Use complete new_content only to create a file or for a genuine full rewrite. Never use ask_user_question for write approval: propose_write opens the editor review.",
     "mcp_servers": [
       {
         "name": "forge-editor",

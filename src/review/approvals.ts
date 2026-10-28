@@ -1,5 +1,6 @@
 import type { ApprovalDecision, ApprovalHandler, ToolCallInfo } from '../agent/types';
 import { computeHunks, normalizeEol, type Hunk } from './hunks';
+import { materializeWrite } from './proposal';
 import { DecisionStore, proposalKey } from './decisions';
 import { PathError, resolveInsideReal, toRel } from '../workspace/paths';
 import { validateCommandPaths } from '../workspace/runCommand';
@@ -37,13 +38,15 @@ export class ReviewApprovals implements ApprovalHandler {
   }
 
   private async decideWrite(call: ToolCallInfo, signal: AbortSignal): Promise<ApprovalDecision> {
-    const { path, new_content, rationale } = call.args;
-    if (typeof path !== 'string' || typeof new_content !== 'string') return { status: 'deny', reason: 'Invalid propose_write arguments.' };
+    const { path, rationale } = call.args;
+    if (typeof path !== 'string') return { status: 'deny', reason: 'Invalid propose_write arguments: path is required.' };
     let abs: string;
     try { abs = await resolveInsideReal(this.d.root, path); }
     catch (e) { return { status: 'deny', reason: e instanceof PathError ? e.message : 'Invalid path.' }; }
 
     const existing = await this.d.readText(abs);
+    let new_content: string;
+    try { new_content = materializeWrite(existing, call.args); } catch (error) { return { status: 'deny', reason: error instanceof Error ? error.message : 'Invalid proposal.' }; }
     const oldText = existing ?? '';
     const reviewedText = normalizeEol(oldText, new_content);
     const hunks = computeHunks(oldText, reviewedText);

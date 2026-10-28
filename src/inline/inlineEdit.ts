@@ -16,7 +16,7 @@ export function buildInlinePrompt(relPath: string, startLine: number, endLine: n
     selected,
     '```',
     '',
-    'Call propose_write exactly once with the COMPLETE new content of the file, changing only what the instruction requires.',
+    'Call propose_write exactly once with path, rationale and edits: [{old_text, new_text}]. Use the selected text or a unique smaller anchor as old_text; new_text contains only the requested replacement. Do not regenerate unrelated content. The editor builds the full candidate and requires hunk review.',
   ].join('\n');
 }
 

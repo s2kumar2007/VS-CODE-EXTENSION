@@ -13,6 +13,7 @@ const rg = path.resolve(`node_modules/@vscode/ripgrep-${process.platform}-${proc
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tools-'));
 fs.writeFileSync(path.join(dir, 'a.py'), 'def hello():\n    return 1\n');
 const writes: string[] = [];
+const candidates: string[] = [];
 
 const api: EditorApi = {
   root: () => dir,
@@ -21,7 +22,7 @@ const api: EditorApi = {
   searchText: (q) => rgText(rg, dir, q),
   searchSymbols: async () => [],
   runCommand: async () => ({ exitCode: 0, output: 'ok', timedOut: false }),
-  applyProposal: async (abs) => { writes.push(abs); return 'REFUSED: not reviewed'; },
+  applyProposal: async (abs, candidate) => { writes.push(abs); candidates.push(candidate); return 'REFUSED: not reviewed'; },
 };
 
 async function connect() {
@@ -56,4 +57,10 @@ describe('MCP editor tools', () => {
     expect(text(r)).toContain('REFUSED');
     expect(fs.readFileSync(path.join(dir, 'a.py'), 'utf8')).toContain('def hello');
   });
+});
+
+it('materializes exact MCP edits but still refuses an unreviewed write',async()=>{
+ const client=await connect();const before=fs.readFileSync(path.join(dir,'a.py'),'utf8');
+ const result=await client.callTool({name:'propose_write',arguments:{path:'a.py',rationale:'test',edits:[{old_text:'return 1',new_text:'return 2'}]}});
+ expect(candidates.at(-1)).toBe(before.replace('return 1','return 2'));expect(text(result)).toContain('REFUSED');expect(fs.readFileSync(path.join(dir,'a.py'),'utf8')).toBe(before);
 });

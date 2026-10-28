@@ -54,7 +54,8 @@ export async function run(): Promise<void> {
  prompt=buildInlinePrompt('src/flask/helpers.py',start+1,end,lines.slice(start,end).join('\n'),"Treat the values 'off' and 'n' as false as well, case-insensitively, and update the docstring to list every value that is treated as false.");
  }else if(task==='B'){
  prompt="Add a new built-in CLI command flask config that prints the loaded application's configuration as JSON, masking the values of any key containing SECRET, PASSWORD, TOKEN or KEY as \"***\". It must appear in flask --help, be covered by a test, and be documented alongside the other built-in commands.";
- const context=await assembleContext(prompt,new WorkspaceContextDeps(api,findRg(ext.extensionPath),root),6000);record.context=context;prompt=context.text+'\n\n'+prompt;
+ const budget=Number(process.env.FORGE_LIVE_CONTEXT_BUDGET??6000);if(!Number.isFinite(budget)||budget<1||budget>6000)throw Error('FORGE_LIVE_CONTEXT_BUDGET must be between 1 and 6000.');record.contextBudget=budget;
+ const context=await assembleContext(prompt,new WorkspaceContextDeps(api,findRg(ext.extensionPath),root),budget);record.context=context;prompt=context.text+'\n\n'+prompt;
  }
  record.stage='running controller';record.prompt=prompt;await save();const timer=setTimeout(()=>void controller.cancel(),task==='B'?900000:300000);
  try{await controller.run(prompt,{textDelta:(_id,t)=>{record.text+=t;},toolCall:n=>{record.tools.push(n);},notice:t=>{record.notices.push({time:Date.now(),text:t});},finished:info=>{record.finished=info;}},task==='A'?'forge-inline':undefined);}finally{clearTimeout(timer);}
