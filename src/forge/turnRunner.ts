@@ -35,6 +35,13 @@ export async function runTurn(
   const events: TurnEvents = new Map();
   const result: TurnResult = { events, status: 'unknown', approvals: [] };
   let terminal = false;
+  let needsClientResponse = false;
+  const reported = new Set<string>();
+  const reportTools = (message: TrueForgeApi.ModelMessageEvent) => {
+    for (const call of message.toolCalls ?? []) if (!reported.has(call.id)) {
+      reported.add(call.id); handlers.onToolCall(toolName(call));
+    }
+  };
   const stream = await client.sessions.createTurnStream(sessionId, { input }, { abortSignal: signal, maxRetries: 0, timeoutInSeconds: 600 });
 
   for await (const { data: event } of stream.withMetadata()) {
@@ -47,6 +54,7 @@ export async function runTurn(
         events.set(event.id, base);
       }
       mergeEventDelta(base, event);
+      if (base.type === 'model.message') reportTools(base);
       // Only the root agent's text is shown live; sub-agent chatter would be noise.
       if (event.content && event.threadId === 'main') handlers.onTextDelta(event.id, event.content);
       continue;
@@ -55,7 +63,7 @@ export async function runTurn(
 
     switch (event.type) {
       case 'model.message':
-        for (const tc of event.toolCalls ?? []) handlers.onToolCall(toolName(tc));
+        reportTools(event);
         break;
       case 'tool.approval_required':
         if (!Array.isArray(event.toolCalls) || typeof event.threadId !== 'string') throw new Error('TrueForge sent an invalid approval event.');
@@ -66,9 +74,14 @@ export async function runTurn(
         }
         result.status = 'paused';
         break;
+      case 'tool.response_required':
+        needsClientResponse = true;
+        result.status = 'error';
+        result.error = 'TrueForge requested an unsupported client-side tool response.';
+        break;
       case 'turn.done':
         terminal = true;
-        result.status = event.state.status === 'done' && result.approvals.length > 0 ? 'paused' : event.state.status;
+        result.status = event.state.status === 'done' && needsClientResponse ? 'error' : event.state.status === 'done' && result.approvals.length > 0 ? 'paused' : event.state.status;
         if (event.state.status === 'error') result.error = event.state.message;
         break;
       default:
@@ -91,7 +104,14 @@ export function describeToolCall(events: TurnEvents, a: PendingApproval): ToolCa
   if (!msg || msg.type !== 'model.message') return undefined;
   const tc = msg.toolCalls?.find((t) => t.id === a.toolCallId);
   if (!tc) return undefined;
-  let args: Record<string, unknown> = {};
-  try { args = JSON.parse(tc.function.arguments || '{}') as Record<string, unknown>; } catch { /* leave empty; handler denies */ }
-  return { name: toolName(tc), args };
+  let value: unknown;
+  try { value = JSON.parse(tc.function.arguments || '{}'); } catch { return undefined; }
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return undefined;
+  const args = value as Record<string, unknown>;
+  const name = toolName(tc);
+  if (tc.function.name === 'call_tool' && name === 'call_tool') {
+    if (args.mcp_server !== 'forge-editor' || typeof args.tool_name !== 'string' || typeof args.input !== 'object' || args.input === null || Array.isArray(args.input)) return undefined;
+    return { name: args.tool_name, args: args.input as Record<string, unknown> };
+  }
+  return { name, args };
 }

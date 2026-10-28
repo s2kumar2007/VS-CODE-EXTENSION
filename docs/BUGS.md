@@ -56,3 +56,7 @@ Original line numbers refer to audited base commit 4ca90c9. Each defect was repo
 | P12-2 | src/agent/resilience.ts | 38 | Groq quota wait ignored | regex recognizes retry in but not try again in | accept both provider hint wordings | test/resilience.test.ts Groq wait regression |
 
 | P12-3 | scripts/groq-adapter.cjs | response forwarding | Groq rejects a later generated tool call before delivery, forcing full-session restarts | provider SSE tool-generation/schema error was relayed immediately | bounded regeneration only before text/tool delivery; lower temperature; never replay visible text | test/groqAdapter.test.ts pre-delivery recovery and immediate-stream/no-replay cases |
+
+| P13-1 | src/forge/turnRunner.ts | describeToolCall | wrapped call_tool proposals denied as unknown approval tool | underlying forge-editor name/input not resolved | unwrap only trusted editor wrappers and reject malformed/non-object inputs | test/contract.test.ts wrapped approvals |
+| P13-2 | src/forge/turnRunner.ts | delta dispatch | streamed tool activity absent | tool callbacks only processed full snapshots | report each merged indexed tool call once | test/contract.test.ts indexed fragments |
+| P13-3 | src/forge/turnRunner.ts | terminal state | unsupported client questions appear complete | tool.response_required ignored before done | report unsupported client response as error | test/contract.test.ts client response required |

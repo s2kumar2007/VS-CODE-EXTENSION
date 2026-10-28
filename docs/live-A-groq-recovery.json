@@ -1,0 +1,36 @@
+{
+  "task": "A",
+  "model": "google-gemini/gemini-2-5-flash",
+  "extensionPath": "C:\\Users\\K\\AppData\\Local\\Temp\\forge-live-61GzFV\\extension",
+  "mode": "automated native host, real provider, scoped programmatic hunk review",
+  "started": "2026-10-28T22:15:09.681Z",
+  "reviews": [],
+  "commands": [],
+  "notices": [
+    {
+      "time": 1793225715055,
+      "text": "Request to \"forge-inline\" failed, retrying (1)..."
+    },
+    {
+      "time": 1793225721246,
+      "text": "Request to \"forge-inline\" failed, retrying (2)..."
+    },
+    {
+      "time": 1793225728039,
+      "text": "Primary model failed, using fallback"
+    }
+  ],
+  "tools": [],
+  "text": "",
+  "stage": "running controller",
+  "effectiveModels": [
+    "groq/gpt-oss-120b",
+    "google-gemini/gemini-2-5-flash",
+    "google-gemini/gemini-2-5-flash"
+  ],
+  "prompt": "Inline edit request.\nFile: src/flask/helpers.py\nSelected range: lines 28-35 (1-based, inclusive)\nInstruction: Treat the values 'off' and 'n' as false as well, case-insensitively, and update the docstring to list every value that is treated as false.\n\nSelected text:\n```\ndef get_debug_flag() -> bool:\r\n    \"\"\"Get whether debug mode should be enabled for the app, indicated by the\r\n    :envvar:`FLASK_DEBUG` environment variable. The default is ``False``.\r\n    \"\"\"\r\n    val = os.environ.get(\"FLASK_DEBUG\")\r\n    return bool(val and val.lower() not in {\"0\", \"false\", \"no\"})\r\n\r\n\r\n```\n\nCall propose_write exactly once with the COMPLETE new content of the file, changing only what the instruction requires.",
+  "finished": {
+    "status": "done"
+  },
+  "ended": "2026-10-28T22:16:38.853Z"
+}

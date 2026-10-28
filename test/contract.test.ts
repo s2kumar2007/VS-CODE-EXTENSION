@@ -73,3 +73,25 @@ it('does not open approval review when SSE ends before a terminal event',async()
   const result=await runTurn(tf.client,s.id,[],{onTextDelta(){},onToolCall(){}});
   expect(result.status).toBe('unknown');expect(result.approvals).toEqual([]);
 });
+
+it('unwraps deferred editor approvals without trusting other MCP servers or malformed inputs',async()=>{
+ const message=toolMsg('source','call','call_tool',{mcp_server:'forge-editor',tool_name:'propose_write',input:{path:'a.py',new_content:'new',rationale:'change'}});
+ message.toolCalls[0]!.toolInfo={type:'truefoundry-system',name:'call_tool'} as any;
+ const tf=new FakeTrueForge({p:[()=>[created(),message,approvalRequired('call','source'),done()]]});const {data:s}=await tf.client.sessions.create({agent:{name:'p'}});
+ const result=await runTurn(tf.client,s.id,[],{onTextDelta(){},onToolCall(){}});
+ expect(describeToolCall(result.events,result.approvals[0]!)).toEqual({name:'propose_write',args:{path:'a.py',new_content:'new',rationale:'change'}});
+ message.toolCalls[0]!.function.arguments=JSON.stringify({mcp_server:'outside',tool_name:'propose_write',input:{path:'a'}});
+ expect(describeToolCall(result.events,result.approvals[0]!)).toBeUndefined();
+ for(const bad of ['null','[]',JSON.stringify({mcp_server:'forge-editor',tool_name:'propose_write',input:null})]){message.toolCalls[0]!.function.arguments=bad;expect(describeToolCall(result.events,result.approvals[0]!)).toBeUndefined();}
+});
+it('reports a tool streamed only as indexed fragments exactly once',async()=>{
+ const tc=toolMsg('source','call','propose_write',{}).toolCalls[0]!;
+ const chunks=[{type:'model.message.delta',id:'source',threadId:'main',toolCalls:[{...tc,index:0,function:{name:'propose_write',arguments:'{"path":'}}]},{type:'model.message.delta',id:'source',threadId:'main',toolCalls:[{index:0,function:{arguments:'"a"}'}}]}];
+ const tf=new FakeTrueForge({p:[()=>[created(),...chunks,approvalRequired('call','source'),done()]]});const {data:s}=await tf.client.sessions.create({agent:{name:'p'}});const calls:string[]=[];
+ const result=await runTurn(tf.client,s.id,[],{onTextDelta(){},onToolCall:n=>calls.push(n)});
+ expect(calls).toEqual(['propose_write']);expect(describeToolCall(result.events,result.approvals[0]!)?.args).toEqual({path:'a'});
+});
+it('does not claim completion when a client-side tool response is still required',async()=>{
+ const tf=new FakeTrueForge({p:[()=>[created(),{type:'tool.response_required',id:'question',threadId:'main',toolCalls:[{id:'q',sourceEventId:'m'}]},done()]]});const {data:s}=await tf.client.sessions.create({agent:{name:'p'}});
+ const result=await runTurn(tf.client,s.id,[],{onTextDelta(){},onToolCall(){}});expect(result.status).toBe('error');expect(result.error).toContain('unsupported client-side tool response');
+});
