@@ -27,7 +27,7 @@ export function briefReason(err: unknown): string {
 function retryDelay(error: unknown, exponentialMs: number): number {
   const message = error instanceof Error ? error.message : String(error);
   if (!/\b429\b/.test(message)) return exponentialMs;
-  const hint = /retry\s+in\s+(\d+(?:\.\d+)?)s\b/i.exec(message);
+  const hint = /(?:retry|try\s+again)\s+in\s+(\d+(?:\.\d+)?)s\b/i.exec(message);
   if (!hint) return exponentialMs;
   const seconds = Number(hint[1]);
   if (!Number.isFinite(seconds)) return exponentialMs;

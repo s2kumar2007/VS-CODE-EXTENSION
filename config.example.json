@@ -20,7 +20,7 @@
     {
       "type": "custom",
       "name": "groq",
-      "base_url": "https://api.groq.com/openai/v1",
+      "base_url": "http://127.0.0.1:8791/v1",
       "models": [
         {
           "name": "gpt-oss-120b",

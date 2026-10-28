@@ -140,3 +140,8 @@ it('Stop interrupts provider-directed backoff before another session starts',asy
  const running=ctl.run('hello',ui);await retryStarted;await ctl.cancel();await running;
  expect(ui.result?.status).toBe('cancelled');expect(tf.inputs).toHaveLength(1);
 },2000);
+
+it('honors Groq try-again quota wording before retrying',async()=>{
+ let n=0;const retry=opts(async()=>{if(++n===1)throw new Error('429 Please try again in 23.5s.');return 'ok';});
+ expect(await runWithFallback(retry.o)).toBe('ok');expect(retry.sleeps).toEqual([23750]);
+});

@@ -32,7 +32,7 @@ Activation starts a loopback MCP server, registers its bearer header in TrueForg
 
 ## Models and Groq fallback
 
-The primary and inline agents use Google. At the user's request, the fallback manifest now uses Groq. Model names in agents/*.json must match TrueForge Settings. Google was account-verified; Groq activation and live testing require a locally supplied Groq key.
+The primary and inline agents use Google. At the user's request, the fallback manifest now uses Groq. Model names in agents/*.json must match TrueForge Settings. Google and Groq credentials are configured locally. Groq tool-loop validation is in progress; no successful A/B is claimed until independent checks pass.
 
 | Role | TrueForge agent reference | Provider model_id |
 |---|---|---|
@@ -42,7 +42,7 @@ The primary and inline agents use Google. At the user's request, the fallback ma
 
 Both models accepted actual generation requests with the available account. The live bad-key test recovered from an invalid OpenAI-compatible provider to Gemini 2.5. That historical fallback probe used Google for both models. The new Groq fallback provides a separate provider once configured; it has not yet been live-verified. Google free-tier quotas apply separately to model requests and blocked longer tool turns during this audit. Gemini 2.5 access can be account-restricted: verify your own account before copying these defaults.
 
-The former primary gemini-3.8-flash was listed but returned HTTP 503 during generation. The available OpenAI credential returned HTTP 401. No Groq credential is currently available in process, Windows user or machine environment, or TrueForge settings. The fallback is staged in forge-agent-fallback.json; setup must complete before activation can synchronize all required agents. Never put keys in this repository. config.example.json is an illustrative checklist, not an importable TrueForge manifest.
+The former primary gemini-3.8-flash was listed but returned HTTP 503 during generation. The available OpenAI credential returned HTTP 401. The Groq credential was entered locally and retained only in TrueForge settings. The fallback is configured in forge-agent-fallback.json. Never put keys in this repository. config.example.json is an illustrative checklist, not an importable TrueForge manifest.
 
 ## Secure local Groq setup
 
@@ -52,9 +52,19 @@ Start TrueForge, then run this from a normal PowerShell terminal:
 
 The prompt hides the key. It is passed through a temporary process environment variable, sent only to Groq and the loopback TrueForge server, and cleared afterward; the helper never writes it to a repository file. TrueForge retains the credential in its own local provider settings outside this repo. An existing GROQ_API_KEY is also supported. On macOS/Linux, set GROQ_API_KEY outside the repo and run node scripts/configure-groq.cjs.
 
-The helper verifies model access and a small generation request before changing TrueForge settings, preserves other Groq models, then synchronizes the committed primary, inline and fallback agents. It refuses a conflicting provider named groq. Reload the extension afterward. Official API/model references: https://console.groq.com/docs/overview and https://console.groq.com/docs/models.
+The helper verifies model access and a small generation request before changing TrueForge settings, starts the loopback compatibility adapter without inheriting GROQ_API_KEY, preserves other Groq models, then synchronizes the committed primary, inline and fallback agents. It refuses a conflicting provider named groq. Reload the extension afterward. Official API/model references: https://console.groq.com/docs/overview and https://console.groq.com/docs/models.
 
-Gemini diagnosis on 28 October: actual HTTP 429 events report both a five-request/minute free-tier cap and a 20-request/day cap; the latest Gemini 2.5 failure reports roughly 18h19m until reset. Authentication has succeeded, including the exact inline Task C fallback. Retrying cannot increase the daily allowance. See docs/live-reset-sessions.json and docs/LIVE_TESTS.md. Groq has independent account limits; no Groq quota or working credential is claimed yet.
+Gemini diagnosis on 28 October: actual HTTP 429 events report both a five-request/minute free-tier cap and a 20-request/day cap; the latest Gemini 2.5 failure reports roughly 18h19m until reset. Authentication has succeeded, including the exact inline Task C fallback. Retrying cannot increase the daily allowance. See docs/live-reset-sessions.json and docs/LIVE_TESTS.md. Groq authentication now works; its own model/input-token limits still apply.
+
+## TrueForge 0.180.1 / Groq compatibility
+
+This TrueForge release replays reasoning_content in custom-provider assistant messages, which Groq rejects, and drops the include_reasoning request parameter. scripts/groq-adapter.cjs is a narrow HTTP compatibility adapter: loopback port 8791, fixed upstream https://api.groq.com/openai/v1, no agent loop or tool execution. It strips incompatible assistant reasoning fields and requests GPT-OSS responses without visible reasoning. It preserves tool calls and SSE bytes, retries 429 responses only before streaming starts, honors retry hints, and cancels waits on disconnect. Credentials are forwarded in memory and never logged or written by the adapter.
+
+The setup helper starts it automatically. After restarting the machine, keep this process running beside TrueForge:
+
+    node scripts/groq-adapter.cjs
+
+The configured Groq base URL is http://127.0.0.1:8791/v1. Keep TrueForge's existing 127.0.0.1 outbound allowlist. Model requests above an account's single-request token limit fail directly; the adapter cannot create quota. Official reasoning controls: https://console.groq.com/docs/reasoning.
 
 ## Usage
 
