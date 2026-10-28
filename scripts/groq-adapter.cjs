@@ -25,7 +25,30 @@ function wait(ms,signal){return new Promise((resolve,reject)=>{
  const timer=setTimeout(()=>{signal.removeEventListener('abort',abort);resolve();},ms);
  signal.addEventListener('abort',abort,{once:true});if(signal.aborted)abort();
 });}
-async function startAdapter({port=8791,fetchImpl=fetch,sleep=wait,maxRetries=4}={}){
+async function forwardStream(upstream,res,signal,canRegenerate){
+ const eventStream=(upstream.headers.get('content-type')||'').includes('text/event-stream');
+ let pending=[],bytes=0,scan='',sent=false;const decoder=new TextDecoder();
+ const write=async chunk=>{if(!res.headersSent)res.writeHead(upstream.status,{'Content-Type':upstream.headers.get('content-type')||'application/json','Cache-Control':'no-cache'});if(!res.write(Buffer.from(chunk)))await once(res,'drain',{signal});};
+ const flush=async()=>{for(const chunk of pending)await write(chunk);pending=[];bytes=0;sent=true;};
+ if(upstream.body)for await(const chunk of upstream.body){
+  if(signal.aborted)break;
+  if(!eventStream||sent){await write(chunk);continue;}
+  pending.push(chunk);bytes+=chunk.byteLength;scan+=decoder.decode(chunk,{stream:true});
+  const frames=scan.split(/\r?\n\r?\n/);scan=frames.pop();
+  for(const frame of frames){
+   const data=frame.split(/\r?\n/).filter(l=>l.startsWith('data:')).map(l=>l.slice(5).trimStart()).join('\n');
+   if(!data||data==='[DONE]')continue;
+   let event;try{event=JSON.parse(data);}catch{continue;}
+   const error=typeof event.error==='string'?event.error:event.error?.message;
+   if(!sent&&canRegenerate&&typeof error==='string'&&/Failed to parse tool call arguments as JSON|Invalid tool call generated|Tool call validation failed/i.test(error))return {regenerate:true};
+   if(event.choices?.some(c=>typeof c.delta?.content==='string'&&c.delta.content.length))await flush();
+  }
+  if(bytes>8*1024*1024)await flush();
+ }
+ if(pending.length)await flush();
+ return {regenerate:false};
+}
+async function startAdapter({port=8791,fetchImpl=fetch,sleep=wait,maxRetries=4,onError=()=>{}}={}){
  const server=http.createServer(async(req,res)=>{
   const url=new URL(req.url,'http://127.0.0.1');
   if(req.method==='GET'&&url.pathname==='/health'){res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({service:'forge-groq-adapter',version:1}));return;}
@@ -50,11 +73,12 @@ async function startAdapter({port=8791,fetchImpl=fetch,sleep=wait,maxRetries=4}=
      if(!limits||Number(limits[2])<=Number(limits[1])){await sleep(quotaWait(message,upstream.headers.get('retry-after')),abort.signal);continue;}
      res.writeHead(429,{'Content-Type':upstream.headers.get('content-type')||'application/json'});res.end(message);return;
     }
-    res.writeHead(upstream.status,{'Content-Type':upstream.headers.get('content-type')||'application/json','Cache-Control':'no-cache'});
-    if(upstream.body)for await(const chunk of upstream.body){if(abort.signal.aborted)break;if(!res.write(Buffer.from(chunk)))await once(res,'drain',{signal:abort.signal});}
-    res.end();return;
+    const forwarded=await forwardStream(upstream,res,abort.signal,attempt<Math.min(maxRetries,2));
+    if(forwarded.regenerate){const payload=JSON.parse(body);payload.temperature=Math.max(0,Number(payload.temperature??0.2)-0.1);body=JSON.stringify(payload);continue;}
+    if(!res.headersSent)res.writeHead(upstream.status,{'Content-Type':upstream.headers.get('content-type')||'application/json'});res.end();return;
    }
-  }catch{
+  }catch(error){
+   onError(error);
    if(!res.headersSent&&!res.destroyed){res.writeHead(abort.signal.aborted?499:502,{'Content-Type':'application/json'});res.end(JSON.stringify({error:{message:abort.signal.aborted?'Groq request cancelled or timed out.':'Groq connection failed.'}}));}
    else if(!res.destroyed)res.destroy();
   }finally{clearTimeout(timeout);}

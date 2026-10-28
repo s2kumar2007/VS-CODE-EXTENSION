@@ -54,3 +54,5 @@ Original line numbers refer to audited base commit 4ca90c9. Each defect was repo
 
 | P12-1 | agents/forge-agent-fallback.json / TrueForge custom-provider adapter | model setup | Groq tool turns fail HTTP 400 on reasoning_content replay although greeting works | TrueForge 0.180.1 custom adapter replays incompatible reasoning and drops include_reasoning | local Groq HTTP compatibility adapter strips replay fields and suppresses reasoning output, preserving tools/SSE | test/groqAdapter.test.ts; live-A-groq-fallback.json records original error |
 | P12-2 | src/agent/resilience.ts | 38 | Groq quota wait ignored | regex recognizes retry in but not try again in | accept both provider hint wordings | test/resilience.test.ts Groq wait regression |
+
+| P12-3 | scripts/groq-adapter.cjs | response forwarding | Groq rejects a later generated tool call before delivery, forcing full-session restarts | provider SSE tool-generation/schema error was relayed immediately | bounded regeneration only before text/tool delivery; lower temperature; never replay visible text | test/groqAdapter.test.ts pre-delivery recovery and immediate-stream/no-replay cases |

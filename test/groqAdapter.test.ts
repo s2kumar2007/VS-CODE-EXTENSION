@@ -38,3 +38,24 @@ it('rejects unsupported paths and missing credentials without calling Groq',asyn
  const upstream=vi.fn();const adapter=await startAdapter({port:0,fetchImpl:upstream});
  try{expect((await fetch(adapter.url+'/chat/completions',{method:'POST',body:'{}'})).status).toBe(401);expect((await fetch(adapter.url+'/other')).status).toBe(404);expect(upstream).not.toHaveBeenCalled();}finally{await adapter.close();}
 });
+
+it('regenerates rejected tool JSON before delivering any tool-call bytes',async()=>{
+ const responses=['data: {"choices":[{"delta":{"role":"assistant"}}]}\n\ndata: {"error":{"message":"Failed to parse tool call arguments as JSON"}}\n\n','data: {"choices":[{"delta":{"tool_calls":[{"id":"valid","function":{"name":"read_file","arguments":"{}"}}]}}]}\n\ndata: [DONE]\n\n'];
+ const bodies:any[]=[];const adapter=await startAdapter({port:0,fetchImpl:async(_u:string,o:any)=>{bodies.push(JSON.parse(o.body));return new Response(responses[bodies.length-1],{headers:{'content-type':'text/event-stream'}});}});
+ try{const result=await fetch(adapter.url+'/chat/completions',{method:'POST',headers:{Authorization:'Bearer dummy'},body:JSON.stringify({...request,temperature:0.2})});expect(await result.text()).toBe(responses[1]);expect(bodies).toHaveLength(2);expect(bodies[1].temperature).toBe(0.1);expect(bodies[1].messages).toEqual(bodies[0].messages);}finally{await adapter.close();}
+});
+it('never regenerates after visible text has been streamed',async()=>{
+ const body='data: {"choices":[{"delta":{"content":"visible"}}]}\n\ndata: {"error":{"message":"Failed to parse tool call arguments as JSON"}}\n\n';
+ const upstream=vi.fn(async()=>new Response(body,{headers:{'content-type':'text/event-stream'}}));const adapter=await startAdapter({port:0,fetchImpl:upstream});
+ try{const result=await fetch(adapter.url+'/chat/completions',{method:'POST',headers:{Authorization:'Bearer dummy'},body:JSON.stringify(request)});expect(await result.text()).toBe(body);expect(upstream).toHaveBeenCalledTimes(1);}finally{await adapter.close();}
+});
+
+it('recovers a schema-validation rejection before delivering tool output',async()=>{
+ let calls=0;const adapter=await startAdapter({port:0,fetchImpl:async()=>{calls++;return new Response(calls===1?'data: {"error":{"message":"Tool call validation failed: missing mcp_server"}}\n\n':'data: [DONE]\n\n',{headers:{'content-type':'text/event-stream'}});}});
+ try{const response=await fetch(adapter.url+'/chat/completions',{method:'POST',headers:{Authorization:'Bearer dummy'},body:JSON.stringify(request)});expect(await response.text()).toBe('data: [DONE]\n\n');expect(calls).toBe(2);}finally{await adapter.close();}
+});
+it('delivers text immediately while the upstream response remains open',async()=>{
+ let upstream!:ReadableStreamDefaultController<Uint8Array>;
+ const adapter=await startAdapter({port:0,fetchImpl:async()=>new Response(new ReadableStream<Uint8Array>({start(c){upstream=c;c.enqueue(new TextEncoder().encode('data: {"choices":[{"delta":{"content":"hello"}}]}\n\n'));}}),{headers:{'content-type':'text/event-stream'}})});
+ try{const response=await fetch(adapter.url+'/chat/completions',{method:'POST',headers:{Authorization:'Bearer dummy'},body:JSON.stringify(request)});const reader=response.body!.getReader();const first=await reader.read();expect(new TextDecoder().decode(first.value)).toContain('hello');upstream.close();await reader.cancel();}finally{await adapter.close();}
+},3000);

@@ -1,0 +1,7 @@
+{
+  "productVersion": "1.145.0-insider",
+  "source": "https://update.code.visualstudio.com/api/update/win32-x64-archive/insider/latest",
+  "archive_sha256": "c133a6cde23a36bf34f4f17d04f31704ed7876c2fbd51f1feef9a0c6a06e1775",
+  "verified": true,
+  "reason": "Installed stable VS Code is updating; native-host validation uses an official isolated host."
+}
