@@ -6,7 +6,7 @@
       "name": "groq/gpt-oss-120b",
       "params": {
         "temperature": 0.2,
-        "reasoning_effort": "low",
+        "reasoning_effort": "medium",
         "parallel_tool_calls": false,
         "max_tokens": 32768
       }

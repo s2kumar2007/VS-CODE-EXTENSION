@@ -74,7 +74,12 @@ async function startAdapter({port=8791,fetchImpl=fetch,sleep=wait,maxRetries=4,o
      res.writeHead(429,{'Content-Type':upstream.headers.get('content-type')||'application/json'});res.end(message);return;
     }
     const forwarded=await forwardStream(upstream,res,abort.signal,attempt<Math.min(maxRetries,2));
-    if(forwarded.regenerate){const payload=JSON.parse(body);payload.temperature=Math.max(0,Number(payload.temperature??0.2)-0.1);body=JSON.stringify(payload);continue;}
+    if(forwarded.regenerate){
+     const payload=JSON.parse(body);payload.temperature=Math.max(0,Number(payload.temperature??0.2)-0.1);
+     const required=(payload.tools||[]).filter(t=>t.type==='function').map(t=>t.function.name+': '+(t.function.parameters?.required||[]).join(', ')).join('; ').slice(0,4000);
+     payload.messages=[...(payload.messages||[]),{role:'system',content:'The preceding tool generation was rejected before delivery. Continue the original user task. Generate valid JSON matching the exposed tool schema, including every required field. Required top-level fields by function: '+required+'. For call_tool, include mcp_server, tool_name and input; editor parameters belong inside input.'}];
+     body=JSON.stringify(payload);continue;
+    }
     if(!res.headersSent)res.writeHead(upstream.status,{'Content-Type':upstream.headers.get('content-type')||'application/json'});res.end();return;
    }
   }catch(error){

@@ -66,3 +66,5 @@ Original line numbers refer to audited base commit 4ca90c9. Each defect was repo
 | P14-1 | scripts/run-live-tests.cjs | exit verification | task ending without proposals leaves done in JSON and failure only in console | outer validation catch did not persist failure | persist verification.status=failed for every post-run validation error | node syntax check; failed live-B-exact-edits.json retained as example |
 
 | P14-2 | agents/forge-agent-fallback.json | tool instructions | Groq emits malformed call_tool arguments | instructions incorrectly forbid wrapper despite TrueForge exposing it | follow actual schemas with explicit complete wrapper example; retain task through reads | real schema error in context-tuned B session; subsequent live rerun |
+
+| P14-3 | scripts/groq-adapter.cjs | pre-delivery regeneration | deterministic malformed tool calls recur after temperature-only retries | regeneration provided no schema correction | append bounded schema feedback while preserving original task/history; same retry and delivery boundaries | test/groqAdapter.test.ts validates history preservation and correction; visible text still prevents retry |

@@ -144,3 +144,7 @@ Compact proposal follow-up: propose_write now supports either complete new_conte
 ### 29 October 2026: exact-edit validation
 
 Task A passed in a real-provider native VS Code host after Gemini quota failure and Groq fallback. Only helpers.py changed within the selected function. Independent truth/false/docstring checks passed, followed by all 35 Flask helper tests (asgiref installed only in a disposable test dependency directory). Typecheck, 114 unit tests and build passed. Task B exact-edits attempt ended after four read/search calls and returned an excerpt without proposing changes; this is a failed task, preserved in live-B-exact-edits.json. Raised the Groq compaction threshold from 4000 to 16000 input tokens for the next attempt; this is a tuning change, not proof of successful compaction. Video explicitly excluded by user.
+
+### 29 October 2026: provider wrapper correction
+
+The context-tuned B run hit Gemini's five-request/minute limit, switched to Groq, and failed provider-side tool validation (missing mcp_server/tool_name on call_tool). Cancelled the remaining old-instruction retry with the session cancel API before any review; the checkout stayed clean. Groq instructions incorrectly prohibited wrappers despite this backend exposing call_tool. They now include the full wrapper schema and a task-continuation reminder. A separate focused Groq B rerun uses FORGE_LIVE_PRIMARY=forge-agent-fallback; normal product defaults remain Gemini primary with Groq fallback. Typecheck, 114 tests and build passed for 1b7b97b.

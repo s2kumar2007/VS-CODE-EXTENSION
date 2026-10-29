@@ -1,14 +1,9 @@
 {
-  "sha": "bdea965899c70928a457573dc2fb2cb68bb81828",
+  "sha": "1b7b97be7ebed27014021d77430b72d9449f226e",
   "status": "completed",
   "conclusion": "success",
-  "url": "https://github.com/s2kumar2007/VS-CODE-EXTENSION/actions/runs/40925116080",
+  "url": "https://github.com/s2kumar2007/VS-CODE-EXTENSION/actions/runs/40926109032",
   "jobs": [
-    {
-      "name": "verify (ubuntu-latest)",
-      "status": "completed",
-      "conclusion": "success"
-    },
     {
       "name": "verify (windows-latest)",
       "status": "completed",
@@ -16,6 +11,11 @@
     },
     {
       "name": "verify (macos-latest)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "verify (ubuntu-latest)",
       "status": "completed",
       "conclusion": "success"
     }

@@ -1,0 +1,111 @@
+{
+  "task": "B",
+  "model": "groq/gpt-oss-120b",
+  "extensionPath": "C:\\Users\\K\\AppData\\Local\\Temp\\forge-live-0JQWyl\\extension",
+  "mode": "automated native host, real provider, scoped programmatic hunk review",
+  "started": "2026-10-29T17:57:04.397Z",
+  "reviews": [],
+  "commands": [],
+  "notices": [
+    {
+      "time": 1793296671539,
+      "text": "Request to \"forge-agent-fallback\" failed, retrying (1)..."
+    },
+    {
+      "time": 1793296846835,
+      "text": "Request to \"forge-agent-fallback\" failed, retrying (2)..."
+    }
+  ],
+  "tools": [
+    "call_tool",
+    "call_tool",
+    "call_tool"
+  ],
+  "text": "",
+  "stage": "running controller",
+  "effectiveModels": [
+    "groq/gpt-oss-120b",
+    "groq/gpt-oss-120b",
+    "groq/gpt-oss-120b"
+  ],
+  "contextBudget": 1500,
+  "context": {
+    "text": "[Forge context: automatically selected under a 1500-token estimated budget. Treat snippets as hints; use search_workspace/read_file for more. State files and reasons.]\n\n### CHANGES.rst:10-38\n(why: 5 hit(s) for \"built\"; 5 hit(s) for \"cli\"; 5 hit(s) for \"command\"; 5 hit(s) for \"flask\"; 5 hit(s) for \"config\")\n```\nVersion 3.1.2\r\n-------------\r\n\r\nReleased 2025-08-19\r\n\r\n-   ``stream_with_context`` does not fail inside async views. :issue:`5774`\r\n-   When using ``follow_redirects`` in the test client, the final state\r\n    of ``session`` is correct. :issue:`5786`\r\n-   Relax type hint for passing bytes IO to ``send_file``. :issue:`5776`\r\n\r\n\r\nVersion 3.1.1\r\n-------------\r\n\r\nReleased 2025-05-13\r\n\r\n-   Fix signing key selection order when key rotation is enabled via\r\n    ``SECRET_KEY_FALLBACKS``. :ghsa:`4grg-w6v8-c28g`\r\n-   Fix type hint for ``cli_runner.invoke``. :issue:`5645`\r\n-   ``flask --help`` loads the app and plugins first to make sure all commands\r\n    are shown. :issue:`5673`\r\n-   Mark sans-io base class as being able to handle views that return\r\n    ``AsyncIterable``. This is not accurate for Flask, but makes typing easier\r\n    for Quart. :pr:`5659`\r\n\r\n\r\nVersion 3.1.0\r\n-------------\r\n\r\n```\n\n### CHANGES.rst:38-64\n(why: 5 hit(s) for \"built\"; 5 hit(s) for \"cli\"; 5 hit(s) for \"command\"; 5 hit(s) for \"flask\"; 5 hit(s) for \"config\")\n```\n\r\nReleased 2024-11-13\r\n\r\n-   Drop support for Python 3.8. :pr:`5623`\r\n-   Update minimum dependency versions to latest feature releases.\r\n    Werkzeug >= 3.1, ItsDangerous >= 2.2, Blinker >= 1.9. :pr:`5624,5633`\r\n-   Provide a configuration option to control automatic option\r\n    responses. :pr:`5496`\r\n-   ``Flask.open_resource``/``open_instance_resource`` and\r\n    ``Blueprint.open_resource`` take an ``encoding`` parameter to use when\r\n    opening in text mode. It defaults to ``utf-8``. :issue:`5504`\r\n-   ``Request.max_content_length`` can be customized per-request instead of only\r\n    through the ``MAX_CONTENT_LENGTH`` config. Added\r\n    ``MAX_FORM_MEMORY_SIZE`` and ``MAX_FORM_PARTS`` config. Added documentation\r\n    about resource limits to the security page. :issue:`5625`\r\n-   Add support for the ``Partitioned`` cookie attribute (CHIPS), with the\r\n    ``SESSION_COOKIE_PARTITIONED`` config. :issue:`5472`\r\n-   ``-e path`` takes precedence over default ``.env`` and ``.flaskenv`` files.\r\n    ``load_dotenv`` loads default files in addition to a path unless\r\n    ``load_defaults=False`` is passed. :issue:`5628`\r\n-   Support key rotation with the ``SECRET_KEY_FALLBACKS`` config, a list of old\r\n    secret keys that can still be used for unsigning. Extensions will need to\r\n    add support. :issue:`5621`\r\n-   Fix how setting ``host_matching=True`` or ``subdomain_matching=False``\r\n    interacts with ``SERVER_NAME``. Setting ``SERVER_NAME`` no longer restricts\r\n    requests to only that domain. :issue:`5553`\r\n-   ``Request.trusted_hosts`` is checked during routing, and can be set through\r\n```\n\n### src/flask/app.py:8-20\n(why: 2 hit(s) for \"built\"; 5 hit(s) for \"cli\"; 5 hit(s) for \"command\"; 5 hit(s) for \"flask\"; 5 hit(s) for \"config\")\n```\nfrom datetime import timedelta\r\nfrom inspect import iscoroutinefunction\r\nfrom itertools import chain\r\nfrom types import TracebackType\r\nfrom urllib.parse import quote as _url_quote\r\n\r\nimport click\r\nfrom werkzeug.datastructures import Headers\r\nfrom werkzeug.datastructures import ImmutableDict\r\nfrom werkzeug.exceptions import BadRequestKeyError\r\nfrom werkzeug.exceptions import HTTPException\r\nfrom werkzeug.exceptions import InternalServerError\r\nfrom werkzeug.routing import BuildError\r\n```\n\n### src/flask/app.py:23-35\n(why: 2 hit(s) for \"built\"; 5 hit(s) for \"cli\"; 5 hit(s) for \"command\"; 5 hit(s) for \"flask\"; 5 hit(s) for \"config\")\n```\nfrom werkzeug.routing import RoutingException\r\nfrom werkzeug.routing import Rule\r\nfrom werkzeug.serving import is_running_from_reloader\r\nfrom werkzeug.wrappers import Response as BaseResponse\r\nfrom werkzeug.wsgi import get_host\r\n\r\nfrom . import cli\r\nfrom . import typing as ft\r\nfrom .ctx import AppContext\r\nfrom .ctx import RequestContext\r\nfrom .globals import _cv_app\r\nfrom .globals import _cv_request\r\nfrom .globals import current_app\r\n```\n\n### src/flask/cli.py:11-49\n(why: imports app; 2 hit(s) for \"built\"; 5 hit(s) for \"cli\"; 5 hit(s) for \"command\"; 5 hit(s) for \"flask\")\n```\nimport traceback\r\nimport typing as t\r\nfrom functools import update_wrapper\r\nfrom operator import itemgetter\r\nfrom types import ModuleType\r\n\r\nimport click\r\nfrom click.core import ParameterSource\r\nfrom werkzeug import run_simple\r\nfrom werkzeug.serving import is_running_from_reloader\r\nfrom werkzeug.utils import import_string\r\n\r\nfrom .globals import current_app\r\nfrom .helpers import get_debug_flag\r\nfrom .helpers import get_load_dotenv\r\n\r\nif t.TYPE_CHECKING:\r\n    import ssl\r\n\r\n    from _typeshed.wsgi import StartResponse\r\n    from _typeshed.wsgi import WSGIApplication\r\n    from _typeshed.wsgi import WSGIEnvironment\r\n\r\n    from .app import Flask\r\n\r\n\r\nclass NoAppException(click.UsageError):\r\n    \"\"\"Raised if an application cannot be found or loaded.\"\"\"\r\n\r\n\r\ndef find_best_app(module: ModuleType) -> Flask:\r\n    \"\"\"Given a module instance this tries to find the best possible\r\n    application in the module or raises an exception.\r\n    \"\"\"\r\n    from . import Flask\r\n\r\n    # Search for the most common names first.\r\n    for attr_name in (\"app\", \"application\"):\r\n        app = getattr(module, attr_name, None)\r\n```\n\n### src/flask/cli.py:39-67\n(why: imports app; 2 hit(s) for \"built\"; 5 hit(s) for \"cli\"; 5 hit(s) for \"command\"; 5 hit(s) for \"flask\")\n```\n\r\n\r\ndef find_best_app(module: ModuleType) -> Flask:\r\n    \"\"\"Given a module instance this tries to find the best possible\r\n    application in the module or raises an exception.\r\n    \"\"\"\r\n    from . import Flask\r\n\r\n    # Search for the most common names first.\r\n    for attr_name in (\"app\", \"application\"):\r\n        app = getattr(module, attr_name, None)\r\n\r\n...[truncated]\n```\n\n",
+    "items": [
+      {
+        "label": "CHANGES.rst:10-38",
+        "reason": "5 hit(s) for \"built\"; 5 hit(s) for \"cli\"; 5 hit(s) for \"command\"; 5 hit(s) for \"flask\"; 5 hit(s) for \"config\"",
+        "text": "Version 3.1.2\r\n-------------\r\n\r\nReleased 2025-08-19\r\n\r\n-   ``stream_with_context`` does not fail inside async views. :issue:`5774`\r\n-   When using ``follow_redirects`` in the test client, the final state\r\n    of ``session`` is correct. :issue:`5786`\r\n-   Relax type hint for passing bytes IO to ``send_file``. :issue:`5776`\r\n\r\n\r\nVersion 3.1.1\r\n-------------\r\n\r\nReleased 2025-05-13\r\n\r\n-   Fix signing key selection order when key rotation is enabled via\r\n    ``SECRET_KEY_FALLBACKS``. :ghsa:`4grg-w6v8-c28g`\r\n-   Fix type hint for ``cli_runner.invoke``. :issue:`5645`\r\n-   ``flask --help`` loads the app and plugins first to make sure all commands\r\n    are shown. :issue:`5673`\r\n-   Mark sans-io base class as being able to handle views that return\r\n    ``AsyncIterable``. This is not accurate for Flask, but makes typing easier\r\n    for Quart. :pr:`5659`\r\n\r\n\r\nVersion 3.1.0\r\n-------------\r\n\r",
+        "priority": 100,
+        "tokens": 260,
+        "truncated": false
+      },
+      {
+        "label": "CHANGES.rst:38-64",
+        "reason": "5 hit(s) for \"built\"; 5 hit(s) for \"cli\"; 5 hit(s) for \"command\"; 5 hit(s) for \"flask\"; 5 hit(s) for \"config\"",
+        "text": "\r\nReleased 2024-11-13\r\n\r\n-   Drop support for Python 3.8. :pr:`5623`\r\n-   Update minimum dependency versions to latest feature releases.\r\n    Werkzeug >= 3.1, ItsDangerous >= 2.2, Blinker >= 1.9. :pr:`5624,5633`\r\n-   Provide a configuration option to control automatic option\r\n    responses. :pr:`5496`\r\n-   ``Flask.open_resource``/``open_instance_resource`` and\r\n    ``Blueprint.open_resource`` take an ``encoding`` parameter to use when\r\n    opening in text mode. It defaults to ``utf-8``. :issue:`5504`\r\n-   ``Request.max_content_length`` can be customized per-request instead of only\r\n    through the ``MAX_CONTENT_LENGTH`` config. Added\r\n    ``MAX_FORM_MEMORY_SIZE`` and ``MAX_FORM_PARTS`` config. Added documentation\r\n    about resource limits to the security page. :issue:`5625`\r\n-   Add support for the ``Partitioned`` cookie attribute (CHIPS), with the\r\n    ``SESSION_COOKIE_PARTITIONED`` config. :issue:`5472`\r\n-   ``-e path`` takes precedence over default ``.env`` and ``.flaskenv`` files.\r\n    ``load_dotenv`` loads default files in addition to a path unless\r\n    ``load_defaults=False`` is passed. :issue:`5628`\r\n-   Support key rotation with the ``SECRET_KEY_FALLBACKS`` config, a list of old\r\n    secret keys that can still be used for unsigning. Extensions will need to\r\n    add support. :issue:`5621`\r\n-   Fix how setting ``host_matching=True`` or ``subdomain_matching=False``\r\n    interacts with ``SERVER_NAME``. Setting ``SERVER_NAME`` no longer restricts\r\n    requests to only that domain. :issue:`5553`\r\n-   ``Request.trusted_hosts`` is checked during routing, and can be set through\r",
+        "priority": 100,
+        "tokens": 439,
+        "truncated": false
+      },
+      {
+        "label": "src/flask/app.py:8-20",
+        "reason": "2 hit(s) for \"built\"; 5 hit(s) for \"cli\"; 5 hit(s) for \"command\"; 5 hit(s) for \"flask\"; 5 hit(s) for \"config\"",
+        "text": "from datetime import timedelta\r\nfrom inspect import iscoroutinefunction\r\nfrom itertools import chain\r\nfrom types import TracebackType\r\nfrom urllib.parse import quote as _url_quote\r\n\r\nimport click\r\nfrom werkzeug.datastructures import Headers\r\nfrom werkzeug.datastructures import ImmutableDict\r\nfrom werkzeug.exceptions import BadRequestKeyError\r\nfrom werkzeug.exceptions import HTTPException\r\nfrom werkzeug.exceptions import InternalServerError\r\nfrom werkzeug.routing import BuildError\r",
+        "priority": 98,
+        "tokens": 160,
+        "truncated": false
+      },
+      {
+        "label": "src/flask/app.py:23-35",
+        "reason": "2 hit(s) for \"built\"; 5 hit(s) for \"cli\"; 5 hit(s) for \"command\"; 5 hit(s) for \"flask\"; 5 hit(s) for \"config\"",
+        "text": "from werkzeug.routing import RoutingException\r\nfrom werkzeug.routing import Rule\r\nfrom werkzeug.serving import is_running_from_reloader\r\nfrom werkzeug.wrappers import Response as BaseResponse\r\nfrom werkzeug.wsgi import get_host\r\n\r\nfrom . import cli\r\nfrom . import typing as ft\r\nfrom .ctx import AppContext\r\nfrom .ctx import RequestContext\r\nfrom .globals import _cv_app\r\nfrom .globals import _cv_request\r\nfrom .globals import current_app\r",
+        "priority": 98,
+        "tokens": 148,
+        "truncated": false
+      },
+      {
+        "label": "src/flask/cli.py:11-49",
+        "reason": "imports app; 2 hit(s) for \"built\"; 5 hit(s) for \"cli\"; 5 hit(s) for \"command\"; 5 hit(s) for \"flask\"",
+        "text": "import traceback\r\nimport typing as t\r\nfrom functools import update_wrapper\r\nfrom operator import itemgetter\r\nfrom types import ModuleType\r\n\r\nimport click\r\nfrom click.core import ParameterSource\r\nfrom werkzeug import run_simple\r\nfrom werkzeug.serving import is_running_from_reloader\r\nfrom werkzeug.utils import import_string\r\n\r\nfrom .globals import current_app\r\nfrom .helpers import get_debug_flag\r\nfrom .helpers import get_load_dotenv\r\n\r\nif t.TYPE_CHECKING:\r\n    import ssl\r\n\r\n    from _typeshed.wsgi import StartResponse\r\n    from _typeshed.wsgi import WSGIApplication\r\n    from _typeshed.wsgi import WSGIEnvironment\r\n\r\n    from .app import Flask\r\n\r\n\r\nclass NoAppException(click.UsageError):\r\n    \"\"\"Raised if an application cannot be found or loaded.\"\"\"\r\n\r\n\r\ndef find_best_app(module: ModuleType) -> Flask:\r\n    \"\"\"Given a module instance this tries to find the best possible\r\n    application in the module or raises an exception.\r\n    \"\"\"\r\n    from . import Flask\r\n\r\n    # Search for the most common names first.\r\n    for attr_name in (\"app\", \"application\"):\r\n        app = getattr(module, attr_name, None)\r",
+        "priority": 96.5,
+        "tokens": 314,
+        "truncated": false
+      },
+      {
+        "label": "src/flask/cli.py:39-67",
+        "reason": "imports app; 2 hit(s) for \"built\"; 5 hit(s) for \"cli\"; 5 hit(s) for \"command\"; 5 hit(s) for \"flask\"",
+        "text": "\r\n\r\ndef find_best_app(module: ModuleType) -> Flask:\r\n    \"\"\"Given a module instance this tries to find the best possible\r\n    application in the module or raises an exception.\r\n    \"\"\"\r\n    from . import Flask\r\n\r\n    # Search for the most common names first.\r\n    for attr_name in (\"app\", \"application\"):\r\n        app = getattr(module, attr_name, None)\r\n\r\n...[truncated]",
+        "priority": 96.5,
+        "tokens": 129,
+        "truncated": true
+      }
+    ],
+    "tokens": 1490,
+    "budget": 1500,
+    "keywords": [
+      "built",
+      "cli",
+      "command",
+      "flask",
+      "config",
+      "prints",
+      "loaded",
+      "application",
+      "configuration",
+      "json"
+    ]
+  },
+  "primaryAgent": "forge-agent-fallback",
+  "prompt": "[Forge context: automatically selected under a 1500-token estimated budget. Treat snippets as hints; use search_workspace/read_file for more. State files and reasons.]\n\n### CHANGES.rst:10-38\n(why: 5 hit(s) for \"built\"; 5 hit(s) for \"cli\"; 5 hit(s) for \"command\"; 5 hit(s) for \"flask\"; 5 hit(s) for \"config\")\n```\nVersion 3.1.2\r\n-------------\r\n\r\nReleased 2025-08-19\r\n\r\n-   ``stream_with_context`` does not fail inside async views. :issue:`5774`\r\n-   When using ``follow_redirects`` in the test client, the final state\r\n    of ``session`` is correct. :issue:`5786`\r\n-   Relax type hint for passing bytes IO to ``send_file``. :issue:`5776`\r\n\r\n\r\nVersion 3.1.1\r\n-------------\r\n\r\nReleased 2025-05-13\r\n\r\n-   Fix signing key selection order when key rotation is enabled via\r\n    ``SECRET_KEY_FALLBACKS``. :ghsa:`4grg-w6v8-c28g`\r\n-   Fix type hint for ``cli_runner.invoke``. :issue:`5645`\r\n-   ``flask --help`` loads the app and plugins first to make sure all commands\r\n    are shown. :issue:`5673`\r\n-   Mark sans-io base class as being able to handle views that return\r\n    ``AsyncIterable``. This is not accurate for Flask, but makes typing easier\r\n    for Quart. :pr:`5659`\r\n\r\n\r\nVersion 3.1.0\r\n-------------\r\n\r\n```\n\n### CHANGES.rst:38-64\n(why: 5 hit(s) for \"built\"; 5 hit(s) for \"cli\"; 5 hit(s) for \"command\"; 5 hit(s) for \"flask\"; 5 hit(s) for \"config\")\n```\n\r\nReleased 2024-11-13\r\n\r\n-   Drop support for Python 3.8. :pr:`5623`\r\n-   Update minimum dependency versions to latest feature releases.\r\n    Werkzeug >= 3.1, ItsDangerous >= 2.2, Blinker >= 1.9. :pr:`5624,5633`\r\n-   Provide a configuration option to control automatic option\r\n    responses. :pr:`5496`\r\n-   ``Flask.open_resource``/``open_instance_resource`` and\r\n    ``Blueprint.open_resource`` take an ``encoding`` parameter to use when\r\n    opening in text mode. It defaults to ``utf-8``. :issue:`5504`\r\n-   ``Request.max_content_length`` can be customized per-request instead of only\r\n    through the ``MAX_CONTENT_LENGTH`` config. Added\r\n    ``MAX_FORM_MEMORY_SIZE`` and ``MAX_FORM_PARTS`` config. Added documentation\r\n    about resource limits to the security page. :issue:`5625`\r\n-   Add support for the ``Partitioned`` cookie attribute (CHIPS), with the\r\n    ``SESSION_COOKIE_PARTITIONED`` config. :issue:`5472`\r\n-   ``-e path`` takes precedence over default ``.env`` and ``.flaskenv`` files.\r\n    ``load_dotenv`` loads default files in addition to a path unless\r\n    ``load_defaults=False`` is passed. :issue:`5628`\r\n-   Support key rotation with the ``SECRET_KEY_FALLBACKS`` config, a list of old\r\n    secret keys that can still be used for unsigning. Extensions will need to\r\n    add support. :issue:`5621`\r\n-   Fix how setting ``host_matching=True`` or ``subdomain_matching=False``\r\n    interacts with ``SERVER_NAME``. Setting ``SERVER_NAME`` no longer restricts\r\n    requests to only that domain. :issue:`5553`\r\n-   ``Request.trusted_hosts`` is checked during routing, and can be set through\r\n```\n\n### src/flask/app.py:8-20\n(why: 2 hit(s) for \"built\"; 5 hit(s) for \"cli\"; 5 hit(s) for \"command\"; 5 hit(s) for \"flask\"; 5 hit(s) for \"config\")\n```\nfrom datetime import timedelta\r\nfrom inspect import iscoroutinefunction\r\nfrom itertools import chain\r\nfrom types import TracebackType\r\nfrom urllib.parse import quote as _url_quote\r\n\r\nimport click\r\nfrom werkzeug.datastructures import Headers\r\nfrom werkzeug.datastructures import ImmutableDict\r\nfrom werkzeug.exceptions import BadRequestKeyError\r\nfrom werkzeug.exceptions import HTTPException\r\nfrom werkzeug.exceptions import InternalServerError\r\nfrom werkzeug.routing import BuildError\r\n```\n\n### src/flask/app.py:23-35\n(why: 2 hit(s) for \"built\"; 5 hit(s) for \"cli\"; 5 hit(s) for \"command\"; 5 hit(s) for \"flask\"; 5 hit(s) for \"config\")\n```\nfrom werkzeug.routing import RoutingException\r\nfrom werkzeug.routing import Rule\r\nfrom werkzeug.serving import is_running_from_reloader\r\nfrom werkzeug.wrappers import Response as BaseResponse\r\nfrom werkzeug.wsgi import get_host\r\n\r\nfrom . import cli\r\nfrom . import typing as ft\r\nfrom .ctx import AppContext\r\nfrom .ctx import RequestContext\r\nfrom .globals import _cv_app\r\nfrom .globals import _cv_request\r\nfrom .globals import current_app\r\n```\n\n### src/flask/cli.py:11-49\n(why: imports app; 2 hit(s) for \"built\"; 5 hit(s) for \"cli\"; 5 hit(s) for \"command\"; 5 hit(s) for \"flask\")\n```\nimport traceback\r\nimport typing as t\r\nfrom functools import update_wrapper\r\nfrom operator import itemgetter\r\nfrom types import ModuleType\r\n\r\nimport click\r\nfrom click.core import ParameterSource\r\nfrom werkzeug import run_simple\r\nfrom werkzeug.serving import is_running_from_reloader\r\nfrom werkzeug.utils import import_string\r\n\r\nfrom .globals import current_app\r\nfrom .helpers import get_debug_flag\r\nfrom .helpers import get_load_dotenv\r\n\r\nif t.TYPE_CHECKING:\r\n    import ssl\r\n\r\n    from _typeshed.wsgi import StartResponse\r\n    from _typeshed.wsgi import WSGIApplication\r\n    from _typeshed.wsgi import WSGIEnvironment\r\n\r\n    from .app import Flask\r\n\r\n\r\nclass NoAppException(click.UsageError):\r\n    \"\"\"Raised if an application cannot be found or loaded.\"\"\"\r\n\r\n\r\ndef find_best_app(module: ModuleType) -> Flask:\r\n    \"\"\"Given a module instance this tries to find the best possible\r\n    application in the module or raises an exception.\r\n    \"\"\"\r\n    from . import Flask\r\n\r\n    # Search for the most common names first.\r\n    for attr_name in (\"app\", \"application\"):\r\n        app = getattr(module, attr_name, None)\r\n```\n\n### src/flask/cli.py:39-67\n(why: imports app; 2 hit(s) for \"built\"; 5 hit(s) for \"cli\"; 5 hit(s) for \"command\"; 5 hit(s) for \"flask\")\n```\n\r\n\r\ndef find_best_app(module: ModuleType) -> Flask:\r\n    \"\"\"Given a module instance this tries to find the best possible\r\n    application in the module or raises an exception.\r\n    \"\"\"\r\n    from . import Flask\r\n\r\n    # Search for the most common names first.\r\n    for attr_name in (\"app\", \"application\"):\r\n        app = getattr(module, attr_name, None)\r\n\r\n...[truncated]\n```\n\n\n\nAdd a new built-in CLI command flask config that prints the loaded application's configuration as JSON, masking the values of any key containing SECRET, PASSWORD, TOKEN or KEY as \"***\". It must appear in flask --help, be covered by a test, and be documented alongside the other built-in commands.",
+  "finished": {
+    "status": "cancelled",
+    "message": "Cancelled - no changes applied"
+  },
+  "ended": "2026-10-29T18:00:53.854Z",
+  "verification": {
+    "status": "failed",
+    "changedFiles": [],
+    "error": "Repeated provider schema errors despite corrected wrapper guidance; cancelled before any review."
+  }
+}
