@@ -43,11 +43,11 @@ export async function run(): Promise<void> {
  record.stage='registering MCP';await save();
  await registerMcpServer(client,mcp.url,mcp.token);
  record.stage='loading agents';await save();
- const agents=(await loadAgentFiles(path.join(ext.extensionPath,'agents'))).filter(a=>a.name!=='forge-agent-fallback'||!!process.env.FORGE_LIVE_FALLBACK);
+ const agents=(await loadAgentFiles(path.join(ext.extensionPath,'agents'))).filter(a=>a.name!=='forge-agent-fallback'||!!process.env.FORGE_LIVE_FALLBACK||process.env.FORGE_LIVE_PRIMARY==='forge-agent-fallback');
  for(const agent of agents)if(agent.name!=='forge-agent-fallback')agent.manifest.model.name=process.env.FORGE_LIVE_MODEL ?? agent.manifest.model.name;
  record.stage='synchronizing agents';record.effectiveModels=agents.map(a=>a.manifest.model.name);await save();
  const synced=await syncAgents(client,agents);if(synced.some(a=>!a.ok))throw new Error(JSON.stringify(synced));
- const controller=new AgentController({getClient:()=>client,approvals,agents:()=>({primary:task==='C'?'forge-audit-invalid':'forge-agent',fallback:task==='C'?'forge-agent':process.env.FORGE_LIVE_FALLBACK}),onRunStart:()=>api.beginRun(),onCancel:()=>api.cancelCommands()});
+ const controller=new AgentController({getClient:()=>client,approvals,agents:()=>({primary:task==='C'?'forge-audit-invalid':process.env.FORGE_LIVE_PRIMARY??'forge-agent',fallback:task==='C'?'forge-agent':process.env.FORGE_LIVE_FALLBACK}),onRunStart:()=>api.beginRun(),onCancel:()=>api.cancelCommands()});
  let prompt='Reply with a short greeting. Do not edit files or run commands.';
  if(task==='A'||task==='C'){
  const text=(await api.readText(path.join(root,'src/flask/helpers.py')))!;const lines=text.split('\n');const start=lines.findIndex(l=>l.startsWith('def get_debug_flag'));let end=start+1;while(end<lines.length&&!lines[end]!.startsWith('def get_load_dotenv'))end++;
@@ -57,7 +57,7 @@ export async function run(): Promise<void> {
  const budget=Number(process.env.FORGE_LIVE_CONTEXT_BUDGET??6000);if(!Number.isFinite(budget)||budget<1||budget>6000)throw Error('FORGE_LIVE_CONTEXT_BUDGET must be between 1 and 6000.');record.contextBudget=budget;
  const context=await assembleContext(prompt,new WorkspaceContextDeps(api,findRg(ext.extensionPath),root),budget);record.context=context;prompt=context.text+'\n\n'+prompt;
  }
- record.stage='running controller';record.prompt=prompt;await save();const timer=setTimeout(()=>void controller.cancel(),task==='B'?900000:300000);
+ record.stage='running controller';record.primaryAgent=task==='C'?'forge-audit-invalid':process.env.FORGE_LIVE_PRIMARY??'forge-agent';record.prompt=prompt;await save();const timer=setTimeout(()=>void controller.cancel(),task==='B'?900000:300000);
  try{await controller.run(prompt,{textDelta:(_id,t)=>{record.text+=t;},toolCall:n=>{record.tools.push(n);},notice:t=>{record.notices.push({time:Date.now(),text:t});},finished:info=>{record.finished=info;}},task==='A'?'forge-inline':undefined);}finally{clearTimeout(timer);}
  await vscode.workspace.saveAll(false);
  }catch(error){record.error=String(error);record.stack=(error as Error).stack;throw error;}
