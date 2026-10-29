@@ -36,8 +36,9 @@ if (!['A','B','C'].includes(task) || !workspace || !model || !codeExe || !result
   const child = spawn(codeExe,['--new-window','--disable-workspace-trust','--user-data-dir='+path.join(scratch,'profile'),'--extensions-dir='+path.join(scratch,'extensions'),'--extensionDevelopmentPath='+extension,'--extensionTestsPath='+tests,root],{windowsHide:true,env:childEnv,stdio:'inherit'});
   child.on('error',error=>{console.error(error);process.exitCode=1;});
   child.on('exit',async code=>{
+    let evidence;
     try {
-      const evidence = JSON.parse(await fs.readFile(path.resolve(result),'utf8'));
+      evidence = JSON.parse(await fs.readFile(path.resolve(result),'utf8'));
       const status = evidence.finished?.status;
       if (code || (task === 'C' ? !['done','error'].includes(status) : status !== 'done')) throw new Error('Live task did not complete: '+JSON.stringify(evidence.finished || evidence.error));
       if (task === 'C') {
@@ -63,6 +64,12 @@ if (!['A','B','C'].includes(task) || !workspace || !model || !codeExe || !result
         await fs.writeFile(path.resolve(result),JSON.stringify(evidence,null,2));
       }
       console.log('Live '+task+' completed and independently verified.');
-    } catch(error) {console.error(error);process.exitCode=1;}
+    } catch(error) {
+      if(evidence && evidence.verification?.status !== 'failed') {
+        evidence.verification={status:'failed',error:String(error.message || error)};
+        await fs.writeFile(path.resolve(result),JSON.stringify(evidence,null,2));
+      }
+      console.error(error);process.exitCode=1;
+    }
   });
 })().catch(error=>{console.error(error);process.exitCode=1;});

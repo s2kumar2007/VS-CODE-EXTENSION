@@ -1,6 +1,6 @@
 # Demo script — Flask 3.1.3
 
-Use disposable checkouts. Never reset a working repository that contains your own changes. Current follow-up status: the exact inline Task C passed in the automated native-host harness; its required manual recording is pending. Groq fallback is staged and requires local credential setup. Tasks A/B have encountered account quota limits; inspect the latest audit/evidence before claiming success.
+The user excluded demo-video recording on 29 October 2026. This script remains an optional reproduction guide; no video or timestamps are claimed. Groq is configured privately. Task A and exact inline Task C passed automated native-host checks; Task B status is tracked in docs/SUBMISSION_STATUS.md.
 
 ## Setup
 

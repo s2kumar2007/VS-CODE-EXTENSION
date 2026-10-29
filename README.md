@@ -32,7 +32,7 @@ Activation starts a loopback MCP server, registers its bearer header in TrueForg
 
 ## Models and Groq fallback
 
-The primary and inline agents use Google. At the user's request, the fallback manifest now uses Groq. Model names in agents/*.json must match TrueForge Settings. Google and Groq credentials are configured locally. Groq tool-loop validation is in progress; no successful A/B is claimed until independent checks pass.
+The primary and inline agents use Google. At the user's request, the fallback manifest now uses Groq. Model names in agents/*.json must match TrueForge Settings. Google and Groq credentials are configured locally. Groq fallback completed the exact inline Task A in the native host, including independent behavior checks. Task B results are recorded separately.
 
 | Role | TrueForge agent reference | Provider model_id |
 |---|---|---|
@@ -64,13 +64,13 @@ The setup helper starts it automatically. After restarting the machine, keep thi
 
     node scripts/groq-adapter.cjs
 
-The configured Groq base URL is http://127.0.0.1:8791/v1. Keep TrueForge's existing 127.0.0.1 outbound allowlist. Model requests above an account's single-request token limit fail directly; the adapter cannot create quota. Official reasoning controls: https://console.groq.com/docs/reasoning.
+The configured Groq base URL is http://127.0.0.1:8791/v1. Keep TrueForge's existing 127.0.0.1 outbound allowlist. Model requests above an account's single-request token limit fail directly; the adapter cannot create quota. For the verified free-tier profile, use forge.contextBudget=1500. The fallback compacts at 16000 input tokens and uses compact exact edits to avoid whole-file histories. Official reasoning controls: https://console.groq.com/docs/reasoning.
 
 ## Usage
 
 - Forge: Open Agent Panel starts agent mode with automatic ranked retrieval. Context used lists actual file slices/signatures, reasons, and estimated costs. @file:path and @symbol:name add explicit context.
 - Forge: Inline Edit Selection (Ctrl+K Ctrl+I, Cmd+K Cmd+I on macOS) asks for an edit instruction.
-- propose_write opens a virtual diff and hunk list. Choose Accept/Reject per hunk and Confirm. Only accepted hunks are applied, through one WorkspaceEdit. Existing LF/CRLF convention and proposed trailing-newline presence are preserved.
+- propose_write accepts exact edits for existing files (unique old_text/new_text anchors) or complete new_content for new files, then opens a virtual diff and hunk list. Choose Accept/Reject per hunk and Confirm. Only accepted hunks are applied, through one WorkspaceEdit. Existing LF/CRLF convention and proposed trailing-newline presence are preserved.
 - run_command needs an exact, single-use local approval through a Run/Cancel picker. It executes in the workspace root, caps returned output at 8 KiB and terminates its process tree on Stop or the 120-second timeout.
 - Stop aborts the request, cancels the TrueForge session, dismisses pending reviews/command confirmation, and clears unused approvals. Stop during context retrieval prevents a later model request.
 - Forge: Undo last applied change restores the prior text, or removes a newly created file. It works across editor reopen while the extension stays active, and refuses to overwrite later edits. History is in memory (up to 50 changes), not persisted across extension reload. Native Ctrl+Z is also supported.
@@ -98,8 +98,8 @@ Use pallets/flask tag 3.1.3 (commit 22d924701a6ae2e4cd01e9a15bbaf3946094af65). S
 
 Unit/integration checks do not need model keys. The audit includes a real Windows VS Code host test for CRLF/undo/ripgrep. Build that optional test with node scripts/build-native-tests.cjs <scratch-output-directory>, then launch a disposable workspace with --extensionTestsPath=<scratch-output-directory>/index.cjs. Set FORGE_NATIVE_RESULT to a scratch JSON path to capture results. Never use your working project as the native test workspace: it creates native.txt.
 
-Windows, macOS and Linux CI passed for commit 3236dac (docs/ci-results.json). Native editor UI tests remain Windows-only. The ripgrep platform binary must be installed as an optional dependency; build/package a VSIX on its target platform. A universal VSIX is not supplied.
+Windows, macOS and Linux CI passed for commit a16dd1f (docs/ci-groq-results.json; refresh pending for the final docs commit). Native editor UI tests remain Windows-only. The ripgrep platform binary must be installed as an optional dependency; build/package a VSIX on its target platform. A universal VSIX is not supplied.
 
-The exact official Task C now passed in the real native-host harness: the inline request retried a failed primary, opened a fresh fallback session, rejected all proposed edits and left the checkout clean. This is automated evidence, not the required on-screen video. Tasks A/B remain unpassed because of provider limits; an invalid model proposal was independently identified and restored in the disposable checkout. See docs/LIVE_TESTS.md for the automated harness scope and docs/AUDIT.md for exact results.
+Live Task A now passes in the native host through real Groq fallback; only the selected helpers.py function changed and independent false/true/docstring checks passed. The exact official Task C passed in the real native-host harness: the inline request retried a failed primary, opened a fresh fallback session, rejected all proposed edits and left the checkout clean. This is automated evidence, not the required on-screen video. Task B validation is in progress. Historical invalid proposals and quota failures remain documented. The user excluded the demo video from this work. See docs/LIVE_TESTS.md for the automated harness scope and docs/AUDIT.md for exact results.
 
 License: MIT

@@ -62,3 +62,5 @@ Original line numbers refer to audited base commit 4ca90c9. Each defect was repo
 | P13-3 | src/forge/turnRunner.ts | terminal state | unsupported client questions appear complete | tool.response_required ignored before done | report unsupported client response as error | test/contract.test.ts client response required |
 
 | P13-4 | src/inline/inlineEdit.ts; src/mcp/tools.ts | proposal contract | tiny edits regenerate full files and exceed free-tier request limits | only full new_content accepted | optional exact edits build a local candidate; existing review, permits and base checks remain authoritative | test/proposal.test.ts; MCP unreviewed exact edit regression in test/tools.test.ts |
+
+| P14-1 | scripts/run-live-tests.cjs | exit verification | task ending without proposals leaves done in JSON and failure only in console | outer validation catch did not persist failure | persist verification.status=failed for every post-run validation error | node syntax check; failed live-B-exact-edits.json retained as example |

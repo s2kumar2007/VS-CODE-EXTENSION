@@ -15,9 +15,9 @@
       "id": "A1",
       "points": 10,
       "focus": "Inline edit",
-      "evidence": "src/inline/inlineEdit.ts; src/review/ReviewPanel.ts",
+      "evidence": "src/inline/inlineEdit.ts; src/review; docs/live-A-exact-edits.json",
       "demo": "Task A: show the editor diff and accept/reject individual hunks.",
-      "status": "Live A blocked by provider rate limits; native mechanisms pass."
+      "status": "Passed real-provider native host: scoped reviewed edit and independent false/true/docstring checks; video excluded by user."
     },
     {
       "id": "A2",
@@ -25,7 +25,7 @@
       "focus": "Agent mode",
       "evidence": "src/panel/ChatPanel.ts; src/agent/controller.ts",
       "demo": "Task B: discover and edit at least three files from the filename-free request.",
-      "status": "Live B blocked by provider rate limits."
+      "status": "Task B is under validation; the prior attempt ended without proposals and is not a pass."
     },
     {
       "id": "A3",
@@ -33,15 +33,15 @@
       "focus": "Streaming and cancellation",
       "evidence": "src/forge/turnRunner.ts; src/agent/controller.ts; test/cancel.test.ts",
       "demo": "Stream text and Stop; show responsive UI and consistent files.",
-      "status": "Automated tests pass; required video not recorded."
+      "status": "Automated tests pass; video excluded by user."
     },
     {
       "id": "B1",
       "points": 15,
       "focus": "Context assembly",
-      "evidence": "src/context; test/context.test.ts; docs/live-B-retry-aware.json",
+      "evidence": "src/context; test/context.test.ts; docs/live-B-context-tuned.json",
       "demo": "Task B: show selected paths/reasons and the context budget.",
-      "status": "Budget/retrieval tests pass; live trace selects 22 items within 6000 estimated tokens."
+      "status": "Budget/retrieval tests pass; latest live trace selects six items within 1490/1500 estimated tokens."
     },
     {
       "id": "B2",
@@ -49,7 +49,7 @@
       "focus": "Diff safety",
       "evidence": "src/review; src/workspace/vscodeApi.ts; docs/vsix-activation-native-results.json",
       "demo": "Accept/reject hunks, apply, and Undo on screen.",
-      "status": "Installed native tests pass; video not recorded."
+      "status": "Installed native tests pass; video excluded by user."
     },
     {
       "id": "B3",
@@ -57,7 +57,7 @@
       "focus": "Resilience",
       "evidence": "src/agent/resilience.ts; docs/live-C-official-recheck.json; docs/live-reset-sessions.json; docs/live-reset-workspaces.json",
       "demo": "Task C: repeat the Task A request against a failed provider and show unchanged git status.",
-      "status": "Exact inline Task C passed in the real native-host harness: unreachable primary, two retries, fresh fallback, rejected proposals, clean checkout; video pending."
+      "status": "Exact inline Task C passed in the real native-host harness: unreachable primary, two retries, fresh fallback, rejected proposals, clean checkout; video excluded by user."
     },
     {
       "id": "B4",
@@ -73,7 +73,7 @@
       "focus": "Video",
       "evidence": "scripts/demo.md",
       "demo": "A, B, C in order, visible checks and the B session, within four minutes.",
-      "status": "Video not supplied; no credit claimed."
+      "status": "Excluded by user; no recording or video credit claimed."
     },
     {
       "id": "C2",
@@ -81,7 +81,7 @@
       "focus": "Write-up",
       "evidence": "docs/WRITEUP.md",
       "demo": "Submit a 1–3 page PDF with eight ordered sections and timestamped scorecard.",
-      "status": "Three-page PDF prepared with supplied team details; video timestamps pending."
+      "status": "Three-page PDF prepared with supplied team details; video excluded by user."
     }
   ]
 }
