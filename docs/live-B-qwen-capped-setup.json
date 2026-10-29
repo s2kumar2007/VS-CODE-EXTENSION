@@ -1,0 +1,8 @@
+{
+  "model": "groq/qwen-3-8-27b",
+  "adapterOutputCap": 900,
+  "contextBudget": 1000,
+  "compactionTrigger": 4500,
+  "reasoningEffort": "none",
+  "note": "Explicit live-validation overrides; normal product defaults unchanged."
+}

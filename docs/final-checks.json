@@ -1,5 +1,6 @@
 {
-  "commit": "6aac57f",
+  "baseCommit": "b8e2456",
+  "change": "Optional adapter output ceiling",
   "checks": [
     {
       "script": "typecheck",
@@ -11,7 +12,7 @@
       "exit": 0,
       "summary": [
         "Test Files  19 passed (19)",
-        "Tests  117 passed (117)"
+        "Tests  119 passed (119)"
       ]
     },
     {

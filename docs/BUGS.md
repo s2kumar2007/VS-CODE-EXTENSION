@@ -70,3 +70,5 @@ Original line numbers refer to audited base commit 4ca90c9. Each defect was repo
 | P14-3 | scripts/groq-adapter.cjs | pre-delivery regeneration | deterministic malformed tool calls recur after temperature-only retries | regeneration provided no schema correction | append bounded schema feedback while preserving original task/history; same retry and delivery boundaries | test/groqAdapter.test.ts validates history preservation and correction; visible text still prevents retry |
 
 | P14-4 | scripts/groq-adapter.cjs | HTTP errors | pre-delivery recovery misses HTTP 400 tool_use_failed errors | only SSE error frames regenerated | same bounded feedback/regeneration for recognized HTTP tool errors; ordinary 400 and 401 unchanged | two HTTP-level regressions in test/groqAdapter.test.ts |
+
+| P14-5 | scripts/groq-adapter.cjs | output request budget | Qwen rejects TrueForge 2048-token summary under a 1000-output-TPM cap | no optional output ceiling in compatibility transport | explicit validated FORGE_GROQ_MAX_OUTPUT_TOKENS lowers output budgets without increasing smaller ones | normalization and real HTTP forwarding tests in test/groqAdapter.test.ts |

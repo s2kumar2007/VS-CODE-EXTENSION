@@ -73,3 +73,11 @@ it('stops after two HTTP tool regenerations and returns the original error statu
  const message=JSON.stringify({error:{code:'tool_use_failed',message:'Tool call validation failed'}});const upstream=vi.fn(async()=>new Response(message,{status:400}));const adapter=await startAdapter({port:0,fetchImpl:upstream});
  try{const response=await fetch(adapter.url+'/chat/completions',{method:'POST',headers:{Authorization:'Bearer dummy'},body:JSON.stringify(request)});expect(response.status).toBe(400);expect(await response.text()).toBe(message);expect(upstream).toHaveBeenCalledTimes(3);}finally{await adapter.close();}
 });
+
+it('optionally lowers output budgets without increasing smaller explicit budgets',()=>{
+ expect(normalizeRequest({model:'other',max_tokens:2048},900).max_tokens).toBe(900);expect(normalizeRequest({model:'other',max_tokens:200},900).max_tokens).toBe(200);expect(normalizeRequest({model:'other',max_completion_tokens:2048},900).max_completion_tokens).toBe(900);expect(normalizeRequest({model:'other'},900).max_tokens).toBe(900);expect(()=>normalizeRequest({},0)).toThrow();
+});
+it('applies the optional account cap to real forwarded requests',async()=>{
+ const seen:any[]=[];const adapter=await startAdapter({port:0,maxOutputTokens:900,fetchImpl:async(_u:string,o:any)=>{seen.push(JSON.parse(o.body));return new Response('data: [DONE]\n\n');}});
+ try{const response=await fetch(adapter.url+'/chat/completions',{method:'POST',headers:{Authorization:'Bearer dummy'},body:JSON.stringify({...request,max_tokens:2048})});await response.text();expect(seen[0].max_tokens).toBe(900);}finally{await adapter.close();}
+});

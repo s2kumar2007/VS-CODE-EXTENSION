@@ -2,8 +2,13 @@
 const http = require('node:http');
 const {once} = require('node:events');
 const UPSTREAM='https://api.groq.com/openai/v1';
-function normalizeRequest(body){
+function normalizeRequest(body,maxOutputTokens){
  const result={...body};
+ if(maxOutputTokens!==undefined){
+  if(!Number.isInteger(maxOutputTokens)||maxOutputTokens<1||maxOutputTokens>65536)throw Error('Output cap must be an integer in 1..65536');
+  if(result.max_completion_tokens!==undefined)result.max_completion_tokens=Math.min(result.max_completion_tokens,maxOutputTokens);
+  else result.max_tokens=Math.min(result.max_tokens??maxOutputTokens,maxOutputTokens);
+ }
  if(Array.isArray(body.messages))result.messages=body.messages.map(message=>{
   if(message.role!=='assistant')return message;
   const {reasoning_content,reasoning,...rest}=message;
@@ -54,7 +59,8 @@ function regenerateBody(body){
      payload.messages=[...(payload.messages||[]),{role:'system',content:'The preceding tool generation was rejected before delivery. Continue the original user task. Generate valid JSON matching the exposed tool schema, including every required field. Required top-level fields by function: '+required+'. For call_tool, include mcp_server, tool_name and input; editor parameters belong inside input.'}];
      return JSON.stringify(payload);
 }
-async function startAdapter({port=8791,fetchImpl=fetch,sleep=wait,maxRetries=4,onError=()=>{}}={}){
+async function startAdapter({port=8791,fetchImpl=fetch,sleep=wait,maxRetries=4,maxOutputTokens,onError=()=>{}}={}){
+ if(maxOutputTokens!==undefined&&(!Number.isInteger(maxOutputTokens)||maxOutputTokens<1||maxOutputTokens>65536))throw Error('Output cap must be an integer in 1..65536');
  const server=http.createServer(async(req,res)=>{
   const url=new URL(req.url,'http://127.0.0.1');
   if(req.method==='GET'&&url.pathname==='/health'){res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({service:'forge-groq-adapter',version:1}));return;}
@@ -69,7 +75,7 @@ async function startAdapter({port=8791,fetchImpl=fetch,sleep=wait,maxRetries=4,o
    if(req.method==='POST'){
     const chunks=[];let size=0;
     for await(const chunk of req){size+=chunk.length;if(size>4*1024*1024){res.writeHead(413);res.end();return;}chunks.push(chunk);}
-    try{body=JSON.stringify(normalizeRequest(JSON.parse(Buffer.concat(chunks).toString('utf8'))));}catch{res.writeHead(400);res.end('Invalid JSON');return;}
+    try{body=JSON.stringify(normalizeRequest(JSON.parse(Buffer.concat(chunks).toString('utf8')),maxOutputTokens));}catch{res.writeHead(400);res.end('Invalid JSON');return;}
    }
    for(let attempt=0;;attempt++){
     const upstream=await fetchImpl(UPSTREAM+url.pathname.slice(3),{method:req.method,headers:{Authorization:req.headers.authorization,'Content-Type':'application/json'},body,signal:abort.signal});
@@ -100,4 +106,4 @@ async function startAdapter({port=8791,fetchImpl=fetch,sleep=wait,maxRetries=4,o
  return {server,url:'http://127.0.0.1:'+server.address().port+'/v1',close:()=>new Promise(resolve=>{server.close(resolve);server.closeAllConnections();})};
 }
 module.exports={normalizeRequest,quotaWait,startAdapter};
-if(require.main===module)startAdapter().then(a=>console.log('Groq compatibility adapter: '+a.url)).catch(e=>{console.error('Groq adapter could not start: '+e.code);process.exitCode=1;});
+if(require.main===module)startAdapter({maxOutputTokens:process.env.FORGE_GROQ_MAX_OUTPUT_TOKENS?Number(process.env.FORGE_GROQ_MAX_OUTPUT_TOKENS):undefined}).then(a=>console.log('Groq compatibility adapter: '+a.url)).catch(e=>{console.error('Groq adapter could not start: '+e.code);process.exitCode=1;});

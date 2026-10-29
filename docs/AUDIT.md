@@ -164,3 +164,7 @@ Final checks for 6aac57f: typecheck, 117 tests, build. The win32-x64 VSIX contai
 ### 29 October 2026: focused model comparison
 
 GPT-OSS B with bounded context continued to fail required call_tool schema validation before any review. Stopped the remaining retries and retained failed evidence in live-B-bounded-context.json. A Qwen comparison uses the same real controller/MCP/editor and official filename-free request, with a recorded 1000-token context budget, 4500-token compaction trigger and reasoning=none. Added optional validated harness overrides; corrected a TypeScript SDK/raw JSON casing mismatch in the override before committing. Typecheck passed. Product defaults remain Gemini primary and Groq GPT-OSS fallback.
+
+### 29 October 2026: Qwen output quota
+
+Qwen progressed through direct searches/reads without GPT-OSS wrapper failures, then rejected a request expecting 2048 output tokens under its 1000-output-TPM account cap. Added an optional validated adapter output ceiling, with forwarding tests; it is off by default. The explicit 900-token Qwen comparison preserves the official request and normal review/application safety. Settings and failures are recorded separately; no task pass is inferred from provider availability.
