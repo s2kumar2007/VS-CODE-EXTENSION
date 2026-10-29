@@ -148,3 +148,11 @@ Task A passed in a real-provider native VS Code host after Gemini quota failure 
 ### 29 October 2026: provider wrapper correction
 
 The context-tuned B run hit Gemini's five-request/minute limit, switched to Groq, and failed provider-side tool validation (missing mcp_server/tool_name on call_tool). Cancelled the remaining old-instruction retry with the session cancel API before any review; the checkout stayed clean. Groq instructions incorrectly prohibited wrappers despite this backend exposing call_tool. They now include the full wrapper schema and a task-continuation reminder. A separate focused Groq B rerun uses FORGE_LIVE_PRIMARY=forge-agent-fallback; normal product defaults remain Gemini primary with Groq fallback. Typecheck, 114 tests and build passed for 1b7b97b.
+
+### 29 October 2026: HTTP-level recovery
+
+Groq pre-delivery regeneration previously covered SSE frames only. Added the same bounded retry to recognized HTTP 400 tool_use_failed/validation errors, with required-field feedback and preserved original history. Ordinary 400, authentication errors, oversized prompts and visible text are not replayed. Added two HTTP regression tests; all 116 tests, typecheck and build passed for 2cce0da. The focused real-provider Task B rerun is recorded separately in live-B-http-recovery.json.
+
+### 29 October 2026: account context cap identified
+
+The HTTP recovery run progressed through search and reads, then Groq returned HTTP 413: Limit 8000, Requested 9593 on single-request TPM. No review or changes occurred. This confirms that raising compaction to 16000 exceeded this account's usable request budget. Reduced the fallback trigger to 5500 and instructed bounded 40-line reads/eight search results. Provider limits remain external; the next focused run tests the configuration rather than claiming success from flags.

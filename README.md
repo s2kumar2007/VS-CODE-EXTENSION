@@ -58,13 +58,13 @@ Gemini diagnosis on 28 October: actual HTTP 429 events report both a five-reques
 
 ## TrueForge 0.180.1 / Groq compatibility
 
-This TrueForge release replays reasoning_content in custom-provider assistant messages, which Groq rejects, and drops the include_reasoning request parameter. scripts/groq-adapter.cjs is a narrow HTTP compatibility adapter: loopback port 8791, fixed upstream https://api.groq.com/openai/v1, no agent loop or tool execution. It strips incompatible assistant reasoning fields and requests GPT-OSS responses without visible reasoning. It preserves tool calls and SSE bytes, retries 429 responses only before streaming starts, honors retry hints, and cancels waits on disconnect. Credentials are forwarded in memory and never logged or written by the adapter.
+This TrueForge release replays reasoning_content in custom-provider assistant messages, which Groq rejects, and drops the include_reasoning request parameter. scripts/groq-adapter.cjs is a narrow HTTP compatibility adapter: loopback port 8791, fixed upstream https://api.groq.com/openai/v1, no agent loop or tool execution. It strips incompatible assistant reasoning fields and requests GPT-OSS responses without visible reasoning. It preserves tool calls and SSE bytes, honors quota retry hints, and cancels waits on disconnect. Recognized tool-generation errors in HTTP 400 or SSE receive at most two regeneration attempts with schema feedback before any output is delivered; visible text is never replayed. Credentials are forwarded in memory and never logged or written by the adapter.
 
 The setup helper starts it automatically. After restarting the machine, keep this process running beside TrueForge:
 
     node scripts/groq-adapter.cjs
 
-The configured Groq base URL is http://127.0.0.1:8791/v1. Keep TrueForge's existing 127.0.0.1 outbound allowlist. Model requests above an account's single-request token limit fail directly; the adapter cannot create quota. For the verified free-tier profile, use forge.contextBudget=1500. The fallback compacts at 16000 input tokens and uses compact exact edits to avoid whole-file histories. Official reasoning controls: https://console.groq.com/docs/reasoning.
+The configured Groq base URL is http://127.0.0.1:8791/v1. Keep TrueForge's existing 127.0.0.1 outbound allowlist. Model requests above an account's single-request token limit fail directly; the adapter cannot create quota. For the verified free-tier profile, use forge.contextBudget=1500. The fallback compacts at 5500 input tokens and uses compact exact edits to avoid whole-file histories. Official reasoning controls: https://console.groq.com/docs/reasoning.
 
 ## Usage
 

@@ -68,3 +68,8 @@ it('does not retry ordinary HTTP 400 request errors',async()=>{
  const upstream=vi.fn(async()=>new Response(JSON.stringify({error:{message:'unsupported parameter'}}),{status:400}));const adapter=await startAdapter({port:0,fetchImpl:upstream});
  try{const response=await fetch(adapter.url+'/chat/completions',{method:'POST',headers:{Authorization:'Bearer dummy'},body:JSON.stringify(request)});expect(response.status).toBe(400);expect(await response.text()).toContain('unsupported parameter');expect(upstream).toHaveBeenCalledTimes(1);}finally{await adapter.close();}
 });
+
+it('stops after two HTTP tool regenerations and returns the original error status',async()=>{
+ const message=JSON.stringify({error:{code:'tool_use_failed',message:'Tool call validation failed'}});const upstream=vi.fn(async()=>new Response(message,{status:400}));const adapter=await startAdapter({port:0,fetchImpl:upstream});
+ try{const response=await fetch(adapter.url+'/chat/completions',{method:'POST',headers:{Authorization:'Bearer dummy'},body:JSON.stringify(request)});expect(response.status).toBe(400);expect(await response.text()).toBe(message);expect(upstream).toHaveBeenCalledTimes(3);}finally{await adapter.close();}
+});
