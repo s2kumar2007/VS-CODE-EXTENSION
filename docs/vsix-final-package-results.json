@@ -1,0 +1,12 @@
+{
+  "ok": true,
+  "file_count": 20,
+  "bytes": 2451544,
+  "sha256": "149b46f1f17b00f213bb7d5d73f0cb8a744ca379062d5e393a4941454d679969",
+  "runtime_dependency_files": [
+    "extension/node_modules/@vscode/ripgrep-win32-x64/LICENSE",
+    "extension/node_modules/@vscode/ripgrep-win32-x64/package.json",
+    "extension/node_modules/@vscode/ripgrep-win32-x64/README.md",
+    "extension/node_modules/@vscode/ripgrep-win32-x64/bin/rg.exe"
+  ]
+}

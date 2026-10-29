@@ -47,7 +47,7 @@
       "id": "B2",
       "points": 10,
       "focus": "Diff safety",
-      "evidence": "src/review; src/workspace/vscodeApi.ts; docs/vsix-activation-native-results.json",
+      "evidence": "src/review; src/workspace/vscodeApi.ts; docs/vsix-final-native-results.json",
       "demo": "Accept/reject hunks, apply, and Undo on screen.",
       "status": "Installed native tests pass; video excluded by user."
     },

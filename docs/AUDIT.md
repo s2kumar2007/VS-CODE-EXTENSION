@@ -156,3 +156,7 @@ Groq pre-delivery regeneration previously covered SSE frames only. Added the sam
 ### 29 October 2026: account context cap identified
 
 The HTTP recovery run progressed through search and reads, then Groq returned HTTP 413: Limit 8000, Requested 9593 on single-request TPM. No review or changes occurred. This confirms that raising compaction to 16000 exceeded this account's usable request budget. Reduced the fallback trigger to 5500 and instructed bounded 40-line reads/eight search results. Provider limits remain external; the next focused run tests the configuration rather than claiming success from flags.
+
+### 29 October 2026: final package and native editor validation
+
+Final checks for 6aac57f: typecheck, 117 tests, build. The win32-x64 VSIX contains 20 files and includes the platform ripgrep binary; exact byte count and SHA256 are in vsix-final-package-results.json. It installed successfully in an isolated VS Code Insiders profile. Native activation and editor tests passed (CRLF, one native Undo, repeated Forge Undo after reopen, refusal to overwrite later manual edits, and real ripgrep execution). This native run deliberately pointed bootstrap at unreachable loopback port 1 to avoid replacing the active live B MCP registration; it does not claim connected backend setup. See vsix-final-native-results.json.

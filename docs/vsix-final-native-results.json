@@ -5,5 +5,9 @@
     "Undo last works twice after editor close/reopen",
     "Undo last preserves later manual edits",
     "resolved ripgrep executable runs in the extension host"
-  ]
+  ],
+  "mode": "Installed win32-x64 VSIX in isolated VS Code Insiders; forge.baseUrl intentionally unreachable for independent offline activation and native editor checks.",
+  "packageSha256": "149b46f1f17b00f213bb7d5d73f0cb8a744ca379062d5e393a4941454d679969",
+  "hostVersion": "1.145.0-insider",
+  "backendSetup": "Not exercised in this run; real-provider MCP/approval integration is covered separately by live task evidence."
 }

@@ -1,0 +1,23 @@
+{
+  "commit": "6aac57f",
+  "checks": [
+    {
+      "script": "typecheck",
+      "exit": 0,
+      "summary": "> forge-agent@0.1.0 typecheck\n> tsc --noEmit"
+    },
+    {
+      "script": "test",
+      "exit": 0,
+      "summary": [
+        "Test Files  19 passed (19)",
+        "Tests  117 passed (117)"
+      ]
+    },
+    {
+      "script": "build",
+      "exit": 0,
+      "summary": "> forge-agent@0.1.0 build\n> node esbuild.js"
+    }
+  ]
+}
