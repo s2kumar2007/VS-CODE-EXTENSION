@@ -34,7 +34,7 @@
           "enabled": true,
           "trigger": {
             "type": "input_tokens",
-            "value": 4000
+            "value": 16000
           }
         },
         "large_tool_response": {
