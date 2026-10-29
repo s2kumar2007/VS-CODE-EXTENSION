@@ -45,6 +45,9 @@ export async function run(): Promise<void> {
  record.stage='loading agents';await save();
  const agents=(await loadAgentFiles(path.join(ext.extensionPath,'agents'))).filter(a=>a.name!=='forge-agent-fallback'||!!process.env.FORGE_LIVE_FALLBACK||process.env.FORGE_LIVE_PRIMARY==='forge-agent-fallback');
  for(const agent of agents)if(agent.name!=='forge-agent-fallback')agent.manifest.model.name=process.env.FORGE_LIVE_MODEL ?? agent.manifest.model.name;
+ const compact=process.env.FORGE_LIVE_COMPACTION_TOKENS;if(compact&&(!Number.isInteger(Number(compact))||Number(compact)<1000||Number(compact)>60000))throw Error('FORGE_LIVE_COMPACTION_TOKENS must be 1000..60000.');
+ for(const agent of agents){if(compact){const raw=agent.manifest.config as unknown as {context_management:{compaction:{trigger:{type:string;value:number}}}};raw.context_management.compaction.trigger={type:'input_tokens',value:Number(compact)};}if(process.env.FORGE_LIVE_REASONING_EFFORT)agent.manifest.model.params={...agent.manifest.model.params,reasoning_effort:process.env.FORGE_LIVE_REASONING_EFFORT};}
+ record.validationOverrides={compactionTokens:compact,reasoningEffort:process.env.FORGE_LIVE_REASONING_EFFORT};
  record.stage='synchronizing agents';record.effectiveModels=agents.map(a=>a.manifest.model.name);await save();
  const synced=await syncAgents(client,agents);if(synced.some(a=>!a.ok))throw new Error(JSON.stringify(synced));
  const controller=new AgentController({getClient:()=>client,approvals,agents:()=>({primary:task==='C'?'forge-audit-invalid':process.env.FORGE_LIVE_PRIMARY??'forge-agent',fallback:task==='C'?'forge-agent':process.env.FORGE_LIVE_FALLBACK}),onRunStart:()=>api.beginRun(),onCancel:()=>api.cancelCommands()});

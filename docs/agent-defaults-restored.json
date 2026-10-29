@@ -1,0 +1,12 @@
+[
+  {
+    "name": "forge-agent",
+    "model": "google-gemini/gemini-3-5-flash",
+    "status": "restored"
+  },
+  {
+    "name": "forge-inline",
+    "model": "google-gemini/gemini-2-5-flash",
+    "status": "restored"
+  }
+]
