@@ -68,3 +68,5 @@ Original line numbers refer to audited base commit 4ca90c9. Each defect was repo
 | P14-2 | agents/forge-agent-fallback.json | tool instructions | Groq emits malformed call_tool arguments | instructions incorrectly forbid wrapper despite TrueForge exposing it | follow actual schemas with explicit complete wrapper example; retain task through reads | real schema error in context-tuned B session; subsequent live rerun |
 
 | P14-3 | scripts/groq-adapter.cjs | pre-delivery regeneration | deterministic malformed tool calls recur after temperature-only retries | regeneration provided no schema correction | append bounded schema feedback while preserving original task/history; same retry and delivery boundaries | test/groqAdapter.test.ts validates history preservation and correction; visible text still prevents retry |
+
+| P14-4 | scripts/groq-adapter.cjs | HTTP errors | pre-delivery recovery misses HTTP 400 tool_use_failed errors | only SSE error frames regenerated | same bounded feedback/regeneration for recognized HTTP tool errors; ordinary 400 and 401 unchanged | two HTTP-level regressions in test/groqAdapter.test.ts |

@@ -48,6 +48,12 @@ async function forwardStream(upstream,res,signal,canRegenerate){
  if(pending.length)await flush();
  return {regenerate:false};
 }
+function regenerateBody(body){
+     const payload=JSON.parse(body);payload.temperature=Math.max(0,Number(payload.temperature??0.2)-0.1);
+     const required=(payload.tools||[]).filter(t=>t.type==='function').map(t=>t.function.name+': '+(t.function.parameters?.required||[]).join(', ')).join('; ').slice(0,4000);
+     payload.messages=[...(payload.messages||[]),{role:'system',content:'The preceding tool generation was rejected before delivery. Continue the original user task. Generate valid JSON matching the exposed tool schema, including every required field. Required top-level fields by function: '+required+'. For call_tool, include mcp_server, tool_name and input; editor parameters belong inside input.'}];
+     return JSON.stringify(payload);
+}
 async function startAdapter({port=8791,fetchImpl=fetch,sleep=wait,maxRetries=4,onError=()=>{}}={}){
  const server=http.createServer(async(req,res)=>{
   const url=new URL(req.url,'http://127.0.0.1');
@@ -73,12 +79,14 @@ async function startAdapter({port=8791,fetchImpl=fetch,sleep=wait,maxRetries=4,o
      if(!limits||Number(limits[2])<=Number(limits[1])){await sleep(quotaWait(message,upstream.headers.get('retry-after')),abort.signal);continue;}
      res.writeHead(429,{'Content-Type':upstream.headers.get('content-type')||'application/json'});res.end(message);return;
     }
+    if(upstream.status===400){
+     const message=await upstream.text();let error;try{error=JSON.parse(message).error;}catch{}
+     if(attempt<Math.min(maxRetries,2)&&(error?.code==='tool_use_failed'||/Failed to parse tool call arguments as JSON|Invalid tool call generated|Tool call validation failed|Failed to call a function/i.test(error?.message||''))){body=regenerateBody(body);continue;}
+     res.writeHead(400,{'Content-Type':upstream.headers.get('content-type')||'application/json'});res.end(message);return;
+    }
     const forwarded=await forwardStream(upstream,res,abort.signal,attempt<Math.min(maxRetries,2));
     if(forwarded.regenerate){
-     const payload=JSON.parse(body);payload.temperature=Math.max(0,Number(payload.temperature??0.2)-0.1);
-     const required=(payload.tools||[]).filter(t=>t.type==='function').map(t=>t.function.name+': '+(t.function.parameters?.required||[]).join(', ')).join('; ').slice(0,4000);
-     payload.messages=[...(payload.messages||[]),{role:'system',content:'The preceding tool generation was rejected before delivery. Continue the original user task. Generate valid JSON matching the exposed tool schema, including every required field. Required top-level fields by function: '+required+'. For call_tool, include mcp_server, tool_name and input; editor parameters belong inside input.'}];
-     body=JSON.stringify(payload);continue;
+     body=regenerateBody(body);continue;
     }
     if(!res.headersSent)res.writeHead(upstream.status,{'Content-Type':upstream.headers.get('content-type')||'application/json'});res.end();return;
    }

@@ -59,3 +59,12 @@ it('delivers text immediately while the upstream response remains open',async()=
  const adapter=await startAdapter({port:0,fetchImpl:async()=>new Response(new ReadableStream<Uint8Array>({start(c){upstream=c;c.enqueue(new TextEncoder().encode('data: {"choices":[{"delta":{"content":"hello"}}]}\n\n'));}}),{headers:{'content-type':'text/event-stream'}})});
  try{const response=await fetch(adapter.url+'/chat/completions',{method:'POST',headers:{Authorization:'Bearer dummy'},body:JSON.stringify(request)});const reader=response.body!.getReader();const first=await reader.read();expect(new TextDecoder().decode(first.value)).toContain('hello');upstream.close();await reader.cancel();}finally{await adapter.close();}
 },3000);
+
+it('recovers HTTP 400 tool-generation errors with feedback before delivery',async()=>{
+ const bodies:any[]=[];const adapter=await startAdapter({port:0,fetchImpl:async(_u:string,o:any)=>{bodies.push(JSON.parse(o.body));return bodies.length===1?new Response(JSON.stringify({error:{code:'tool_use_failed',message:'Tool call validation failed: missing mcp_server'}}),{status:400,headers:{'content-type':'application/json'}}):new Response('data: [DONE]\n\n',{headers:{'content-type':'text/event-stream'}});}});
+ try{const response=await fetch(adapter.url+'/chat/completions',{method:'POST',headers:{Authorization:'Bearer dummy'},body:JSON.stringify(request)});expect(response.status).toBe(200);expect(await response.text()).toBe('data: [DONE]\n\n');expect(bodies).toHaveLength(2);expect(bodies[1].messages.slice(0,-1)).toEqual(bodies[0].messages);expect(bodies[1].messages.at(-1).content).toContain('mcp_server, tool_name and input');}finally{await adapter.close();}
+});
+it('does not retry ordinary HTTP 400 request errors',async()=>{
+ const upstream=vi.fn(async()=>new Response(JSON.stringify({error:{message:'unsupported parameter'}}),{status:400}));const adapter=await startAdapter({port:0,fetchImpl:upstream});
+ try{const response=await fetch(adapter.url+'/chat/completions',{method:'POST',headers:{Authorization:'Bearer dummy'},body:JSON.stringify(request)});expect(response.status).toBe(400);expect(await response.text()).toContain('unsupported parameter');expect(upstream).toHaveBeenCalledTimes(1);}finally{await adapter.close();}
+});
