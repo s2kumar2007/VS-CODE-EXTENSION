@@ -168,3 +168,7 @@ GPT-OSS B with bounded context continued to fail required call_tool schema valid
 ### 29 October 2026: Qwen output quota
 
 Qwen progressed through direct searches/reads without GPT-OSS wrapper failures, then rejected a request expecting 2048 output tokens under its 1000-output-TPM account cap. Added an optional validated adapter output ceiling, with forwarding tests; it is off by default. The explicit 900-token Qwen comparison preserves the official request and normal review/application safety. Settings and failures are recorded separately; no task pass is inferred from provider availability.
+
+### 30 October 2026: bounded editor reads
+
+Task B provider traces showed models requesting whole 1136-line files and 120+ line slices despite prompt guidance, causing account-limit and compaction churn. read_file now requires explicit start/end for files over 80 lines and rejects reversed or over-80-line ranges. Small files remain readable in full. Added MCP regressions for whole, oversized, reversed and valid sliced reads. The official Task B remains model-driven; no Flask files were hand-edited.

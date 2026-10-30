@@ -6,6 +6,7 @@ import { rankSymbols, rankTextHits } from '../context/rank';
 import { materializeWrite } from '../review/proposal';
 
 const MAX_READ_BYTES = 1_000_000;
+const MAX_READ_LINES = 80;
 type ToolResult = { content: { type: 'text'; text: string }[]; isError?: boolean };
 const ok = (...texts: string[]): ToolResult => ({ content: texts.map((text) => ({ type: 'text' as const, text })) });
 const fail = (msg: string): ToolResult => ({ content: [{ type: 'text', text: msg }], isError: true });
@@ -29,8 +30,12 @@ export function registerEditorTools(mcp: McpServer, api: EditorApi): void {
     if (text === undefined) return fail(`File not found: ${path}`);
     if (Buffer.byteLength(text) > MAX_READ_BYTES && start === undefined) return fail('File is larger than 1MB; request a line range with start/end.');
     const lines = text.split('\n');
+    if (lines.length > MAX_READ_LINES && (start === undefined || end === undefined)) return fail(`File has ${lines.length} lines; request a start/end range of at most ${MAX_READ_LINES} lines.`);
     const s = start ?? 1;
-    const e = Math.min(end ?? lines.length, lines.length);
+    const requestedEnd = end ?? lines.length;
+    if (requestedEnd < s) return fail('end must be greater than or equal to start.');
+    if (requestedEnd - s + 1 > MAX_READ_LINES) return fail(`Read range is limited to ${MAX_READ_LINES} lines; request a smaller slice.`);
+    const e = Math.min(requestedEnd, lines.length);
     return ok(`${toRel(root, abs)} lines ${s}-${e} of ${lines.length}`, lines.slice(s - 1, e).join('\n'));
   }));
 

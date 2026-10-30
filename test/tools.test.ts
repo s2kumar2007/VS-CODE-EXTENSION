@@ -64,3 +64,11 @@ it('materializes exact MCP edits but still refuses an unreviewed write',async()=
  const result=await client.callTool({name:'propose_write',arguments:{path:'a.py',rationale:'test',edits:[{old_text:'return 1',new_text:'return 2'}]}});
  expect(candidates.at(-1)).toBe(before.replace('return 1','return 2'));expect(text(result)).toContain('REFUSED');expect(fs.readFileSync(path.join(dir,'a.py'),'utf8')).toBe(before);
 });
+
+it('bounds large-file reads so model history cannot absorb a whole source file',async()=>{
+ const large=Array.from({length:100},(_,i)=>'line '+(i+1)).join('\n');fs.writeFileSync(path.join(dir,'large.txt'),large);const c=await connect();
+ const whole:any=await c.callTool({name:'read_file',arguments:{path:'large.txt'}});expect(whole.isError).toBe(true);expect(text(whole)).toContain('request a start/end range');
+ const oversized:any=await c.callTool({name:'read_file',arguments:{path:'large.txt',start:1,end:81}});expect(oversized.isError).toBe(true);expect(text(oversized)).toContain('limited to 80 lines');
+ const reversed:any=await c.callTool({name:'read_file',arguments:{path:'large.txt',start:20,end:10}});expect(reversed.isError).toBe(true);expect(text(reversed)).toContain('greater than or equal');
+ const slice:any=await c.callTool({name:'read_file',arguments:{path:'large.txt',start:21,end:30}});expect(slice.isError).not.toBe(true);expect(text(slice)).toContain('lines 21-30 of 100');
+});

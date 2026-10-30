@@ -72,3 +72,5 @@ Original line numbers refer to audited base commit 4ca90c9. Each defect was repo
 | P14-4 | scripts/groq-adapter.cjs | HTTP errors | pre-delivery recovery misses HTTP 400 tool_use_failed errors | only SSE error frames regenerated | same bounded feedback/regeneration for recognized HTTP tool errors; ordinary 400 and 401 unchanged | two HTTP-level regressions in test/groqAdapter.test.ts |
 
 | P14-5 | scripts/groq-adapter.cjs | output request budget | Qwen rejects TrueForge 2048-token summary under a 1000-output-TPM cap | no optional output ceiling in compatibility transport | explicit validated FORGE_GROQ_MAX_OUTPUT_TOKENS lowers output budgets without increasing smaller ones | normalization and real HTTP forwarding tests in test/groqAdapter.test.ts |
+
+| P14-6 | src/mcp/tools.ts | read_file | models can absorb entire large source files or oversized ranges, exhausting provider budgets and compaction history | byte limit allowed any sub-1MB file and unbounded ranges | require explicit ranges for files over 80 lines; reject reversed or over-80-line slices | test/tools.test.ts bounded-read regression |
