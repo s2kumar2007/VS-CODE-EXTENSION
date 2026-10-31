@@ -24,7 +24,7 @@ The default 6000-token limit is a chars/4 estimate of the rendered CONTEXT block
 
 ## 5. Model setup
 
-Primary and inline use Google Gemini; the independent fallback is Groq GPT-OSS 120B. The user entered the Groq credential privately and it is retained in TrueForge settings outside the repository. Gemini authentication succeeded, but live runs exhausted its free-tier quota. Actual Task A recovered through Groq, applied only the selected function change, and independently passed false/true/docstring checks. Task B uses six context items costing 1490 of 1500 estimated tokens; its outcome is recorded in the live evidence.
+Primary and inline use Google Gemini; the independent fallback is Groq GPT-OSS 120B. The user entered the Groq credential privately and it is retained in TrueForge settings outside the repository. Gemini authentication succeeded, but live runs exhausted its free-tier quota. Actual Task A recovered through Groq, applied only the selected function change, and independently passed false/true/docstring checks. A separate Groq Qwen comparison uses four context items costing 991/1000 estimated tokens, a 4500-token compaction trigger and a 900-output-token transport ceiling. These are explicit validation overrides; Task B outcome is stated below.
 
 TrueForge 0.180.1 replays reasoning_content that Groq rejects and drops include_reasoning. A loopback-only HTTP adapter normalizes those fields, preserves tool calls and text streaming, honors quota delays, and permits bounded schema-feedback regeneration for HTTP/SSE tool errors before any output is delivered. TrueForge retains the agent loop and approvals. The setup helper starts the adapter without inheriting the key; after a machine restart, run it alongside TrueForge. Exact edits reduce token use. The fallback compaction trigger is 5500 input tokens. Account limits remain applicable; cost is unmeasured.
 
@@ -37,7 +37,7 @@ Official weights and definitions are sourced in docs/official-rubric.json and do
 | A1 Inline edit | 10 | N/A | Passed real-provider native host: scoped reviewed edit and independent false/true/docstring checks; video excluded by user. |
 | A2 Agent mode | 10 | N/A | Task B under validation; prior attempt made no proposals. |
 | A3 Streaming and cancellation | 10 | N/A | Automated tests pass; video excluded by user. |
-| B1 Context assembly | 15 | N/A | Budget/retrieval tests pass; latest live trace selects six items within 1490/1500 estimated tokens. |
+| B1 Context assembly | 15 | N/A | Budget/retrieval tests pass; live context selects four items within 991/1000 estimated tokens. |
 | B2 Diff safety | 10 | N/A | Installed native tests pass; video excluded by user. |
 | B3 Resilience | 10 | N/A | Exact inline Task C passed in the real native-host harness: unreachable primary, two retries, fresh fallback, rejected proposals, clean checkout; video excluded by user. |
 | B4 TrueForge integration depth | 10 | N/A | Wire/MCP tests pass. Subagent/compaction flags alone do not establish top-anchor behavior. |

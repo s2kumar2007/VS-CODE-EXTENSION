@@ -39,9 +39,9 @@
       "id": "B1",
       "points": 15,
       "focus": "Context assembly",
-      "evidence": "src/context; test/context.test.ts; docs/live-B-context-tuned.json",
+      "evidence": "src/context; test/context.test.ts; docs/live-B-qwen-capped.json",
       "demo": "Task B: show selected paths/reasons and the context budget.",
-      "status": "Budget/retrieval tests pass; latest live trace selects six items within 1490/1500 estimated tokens."
+      "status": "Budget/retrieval tests pass; live context selects four items within 991/1000 estimated tokens."
     },
     {
       "id": "B2",
