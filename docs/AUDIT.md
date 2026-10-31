@@ -172,3 +172,6 @@ Qwen progressed through direct searches/reads without GPT-OSS wrapper failures, 
 ### 30 October 2026: bounded editor reads
 
 Task B provider traces showed models requesting whole 1136-line files and 120+ line slices despite prompt guidance, causing account-limit and compaction churn. read_file now requires explicit start/end for files over 80 lines and rejects reversed or over-80-line ranges. Small files remain readable in full. Added MCP regressions for whole, oversized, reversed and valid sliced reads. The official Task B remains model-driven; no Flask files were hand-edited.
+### 31 October 2026: Task B serialized live evaluation
+
+Re-evaluated Task B against a clean Flask 3.1.3 checkout (22d9247) using real Groq Qwen (groq/qwen-3-8-27b) with serialized tool calls (parallel_tool_calls: false), bounded reads (80-line maximum), 1000-token context budget, 6000-token compaction trigger, and 900-output-token cap. The agent executed 11 exploration tools (search_workspace and bounded read_file calls examining src/flask/cli.py) over 20+ minutes, but did not reach the propose_write stage across the three required files before the controller timeout. The checkout remained clean and unmodified. The run is recorded as incomplete in live-B-verified.json. Typecheck passed, all 120 tests passed, and production build succeeded.

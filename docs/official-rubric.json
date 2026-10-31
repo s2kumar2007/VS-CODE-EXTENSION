@@ -23,9 +23,9 @@
       "id": "A2",
       "points": 10,
       "focus": "Agent mode",
-      "evidence": "src/panel/ChatPanel.ts; src/agent/controller.ts",
+      "evidence": "src/panel/ChatPanel.ts; src/agent/controller.ts; docs/live-B-verified.json",
       "demo": "Task B: discover and edit at least three files from the filename-free request.",
-      "status": "Task B is under validation; the prior attempt ended without proposals and is not a pass."
+      "status": "Incomplete: evaluated live on real Groq qwen-3-8-27b; 11 tool calls executed; ended without proposals before host timeout; checkout clean; video excluded by user."
     },
     {
       "id": "A3",
@@ -39,7 +39,7 @@
       "id": "B1",
       "points": 15,
       "focus": "Context assembly",
-      "evidence": "src/context; test/context.test.ts; docs/live-B-qwen-capped.json",
+      "evidence": "src/context; test/context.test.ts; docs/live-B-verified.json",
       "demo": "Task B: show selected paths/reasons and the context budget.",
       "status": "Budget/retrieval tests pass; live context selects four items within 991/1000 estimated tokens."
     },
@@ -80,7 +80,7 @@
       "points": 15,
       "focus": "Write-up",
       "evidence": "docs/WRITEUP.md",
-      "demo": "Submit a 1–3 page PDF with eight ordered sections and timestamped scorecard.",
+      "demo": "Submit a 1\u20133 page PDF with eight ordered sections and timestamped scorecard.",
       "status": "Three-page PDF prepared with supplied team details; video excluded by user."
     }
   ]

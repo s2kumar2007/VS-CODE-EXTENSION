@@ -24,7 +24,7 @@ The default 6000-token limit is a chars/4 estimate of the rendered CONTEXT block
 
 ## 5. Model setup
 
-Primary and inline use Google Gemini; the independent fallback is Groq GPT-OSS 120B. The user entered the Groq credential privately and it is retained in TrueForge settings outside the repository. Gemini authentication succeeded, but live runs exhausted its free-tier quota. Actual Task A recovered through Groq, applied only the selected function change, and independently passed false/true/docstring checks. A separate Groq Qwen comparison uses four context items costing 991/1000 estimated tokens, a 4500-token compaction trigger and a 900-output-token transport ceiling. These are explicit validation overrides; Task B outcome is stated below.
+Primary and inline use Google Gemini; the independent fallback is Groq GPT-OSS 120B. The user entered the Groq credential privately and it is retained in TrueForge settings outside the repository. Gemini authentication succeeded, but live runs exhausted its free-tier quota. Actual Task A recovered through Groq, applied only the selected function change, and independently passed false/true/docstring checks. Task B was evaluated live using Groq Qwen (groq/qwen-3-8-27b) with four context items costing 991/1000 estimated tokens, a 6000-token compaction trigger, a 900-output-token transport ceiling, and serialized tool calls. The agent executed 11 repository exploration tools before timing out without proposing edits; its outcome is documented below.
 
 TrueForge 0.180.1 replays reasoning_content that Groq rejects and drops include_reasoning. A loopback-only HTTP adapter normalizes those fields, preserves tool calls and text streaming, honors quota delays, and permits bounded schema-feedback regeneration for HTTP/SSE tool errors before any output is delivered. TrueForge retains the agent loop and approvals. The setup helper starts the adapter without inheriting the key; after a machine restart, run it alongside TrueForge. Exact edits reduce token use. The fallback compaction trigger is 5500 input tokens. Account limits remain applicable; cost is unmeasured.
 
@@ -35,7 +35,7 @@ Official weights and definitions are sourced in docs/official-rubric.json and do
 | Criterion | Maximum | Video (excluded) | Evidence / honest claim |
 |---|---:|---|---|
 | A1 Inline edit | 10 | N/A | Passed real-provider native host: scoped reviewed edit and independent false/true/docstring checks; video excluded by user. |
-| A2 Agent mode | 10 | N/A | Task B under validation; prior attempt made no proposals. |
+| A2 Agent mode | 10 | N/A | Task B incomplete: evaluated live on real Groq qwen-3-8-27b; 11 tool calls performed; ended without proposals before host timeout; checkout clean; video excluded by user. |
 | A3 Streaming and cancellation | 10 | N/A | Automated tests pass; video excluded by user. |
 | B1 Context assembly | 15 | N/A | Budget/retrieval tests pass; live context selects four items within 991/1000 estimated tokens. |
 | B2 Diff safety | 10 | N/A | Installed native tests pass; video excluded by user. |
@@ -50,7 +50,7 @@ TrueForge 0.180.1, TS SDK 0.180.0, VS Code native extension test host, MCP SDK, 
 
 ## 8. Known limitations
 
-- The exact inline Task C passed in the real native-host harness with an unreachable primary, fresh fallback and rejected proposals; its checkout stayed clean. Task A has passed with scoped edits and independent checks; Task B is under validation. Provider quotas and malformed generations remain possible. Dynamic subagents are enabled, not claimed as observed without event evidence.
+- The exact inline Task C passed in the real native-host harness with an unreachable primary, fresh fallback and rejected proposals; its checkout stayed clean. Task A passed with scoped edits and independent checks (35 helper tests). Task B was evaluated live on real Groq qwen-3-8-27b under the filename-free prompt; the agent executed 11 search/read steps across 20+ minutes, but did not reach the propose_write stage before the controller timeout, leaving the checkout clean. Task B is honestly recorded as incomplete. Provider quotas and malformed generations remain possible. Dynamic subagents are enabled, not claimed as observed without event evidence.
 - run_command executes with user permissions. Path preflight catches explicit escapes but cannot sandbox arbitrary code or guarantee outside files are untouched. Approved command effects cannot be rolled back.
 - Before approval, failures use exponential retries then fallback in a fresh session. After any write/command approval, replay stops to prevent duplication; uncertain effects are reported. Failure/Stop can retain already approved changes.
 - One folder and one active request. Each user request creates a fresh session; approval resumes reuse it. The shared forge-editor registration does not isolate multiple windows on one server.
