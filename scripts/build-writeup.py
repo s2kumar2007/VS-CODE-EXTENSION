@@ -23,7 +23,7 @@ small = ParagraphStyle('small', parent=body, fontSize=7.5, leading=10, textColor
 def clean(t):
     return escape(t.replace('—', '-').replace('–', '-').replace('’', "'").replace('**', '').replace(' ', ' '))
 
-story = [Paragraph('FORGE AGENT', ParagraphStyle('title', parent=heading, fontSize=22, leading=25)), Paragraph('TrueFoundry Forge-a-thon | Technical write-up | 29 October 2026', small), Paragraph('Validation report: Task A and failure recovery verified; Task B status is stated below. Video excluded by user. No competition score is claimed.', small)]
+story = [Paragraph('FORGE AGENT', ParagraphStyle('title', parent=heading, fontSize=22, leading=25)), Paragraph('TrueFoundry Forge-a-thon | Technical write-up | 31 October 2026', small), Paragraph('Validation report: Task A and failure recovery verified; Task B status is stated below. Video excluded by user. No competition score is claimed.', small)]
 for i, section in enumerate(sections, 1):
     if i in (4, 6):
         story.append(PageBreak())
