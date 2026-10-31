@@ -5,7 +5,7 @@ Verified on 31 October 2026. Team Git Push, VIT Vellore: B. Sunil Kumar, Eric Be
 | Item | State | Evidence |
 |---|---|---|
 | Typecheck / unit tests / build | Pass: 120 tests | docs/AUDIT.md |
-| Windows / macOS / Linux CI | Pass for 8b811ba | docs/ci-groq-results.json |
+| Windows / macOS / Linux CI | Pass for 0f63873 | docs/ci-groq-results.json |
 | Windows package / installation / native editing | Pass: final packaged extension installs, activates offline, and passes native editor checks | docs/vsix-final-package-results.json; docs/vsix-final-native-results.json |
 | Official rubric / team / three-page PDF | Source updated; PDF regenerated and verified | docs/RUBRIC.md; docs/WRITEUP.md |
 | Exact official Task C | Pass in automated real-provider native host; rejected writes; clean checkout | docs/live-C-official-recheck.json |
