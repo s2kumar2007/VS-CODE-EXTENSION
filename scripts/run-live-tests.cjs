@@ -31,9 +31,10 @@ if (!['A','B','C'].includes(task) || !workspace || !model || !codeExe || !result
   const tests = path.join(scratch,'tests','index.cjs');
   require('esbuild').buildSync({entryPoints:['test/native/live.ts'],bundle:true,platform:'node',format:'cjs',external:['vscode'],outfile:tests});
   await fs.mkdir(path.dirname(path.resolve(result)),{recursive:true});
+  try { await fs.unlink(path.resolve(result)); } catch {}
   const childEnv = {...process.env,USERPROFILE:process.env.USERPROFILE || os.homedir(),FORGE_LIVE_TASK:task,FORGE_LIVE_MODEL:model,FORGE_LIVE_RESULT:path.resolve(result)};
   delete childEnv.ELECTRON_RUN_AS_NODE;
-  const child = spawn(codeExe,['--new-window','--disable-workspace-trust','--user-data-dir='+path.join(scratch,'profile'),'--extensions-dir='+path.join(scratch,'extensions'),'--extensionDevelopmentPath='+extension,'--extensionTestsPath='+tests,root],{windowsHide:true,env:childEnv,stdio:'inherit'});
+  const child = spawn(codeExe,['--new-window','--disable-workspace-trust','--disable-telemetry','--disable-updates','--disable-gpu','--user-data-dir='+path.join(scratch,'profile'),'--extensions-dir='+path.join(scratch,'extensions'),'--extensionDevelopmentPath='+extension,'--extensionTestsPath='+tests,root],{windowsHide:true,env:childEnv,stdio:'inherit'});
   child.on('error',error=>{console.error(error);process.exitCode=1;});
   child.on('exit',async code=>{
     let evidence;

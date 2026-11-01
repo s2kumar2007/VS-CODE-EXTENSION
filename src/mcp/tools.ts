@@ -16,12 +16,22 @@ async function guarded(fn: () => Promise<ToolResult>): Promise<ToolResult> {
   try { return await fn(); } catch (e) { return fail(e instanceof PathError ? `Refused: ${e.message}` : `Error: ${e instanceof Error ? e.message : String(e)}`); }
 }
 
+const seenReads = new Set<string>();
+const seenSearches = new Set<string>();
+let readCount = 0;
+
+export function resetToolDeduplication(): void {
+  seenReads.clear();
+  seenSearches.clear();
+  readCount = 0;
+}
+
 /** Registers the five editor tools. All paths are validated inside the workspace. */
 export function registerEditorTools(mcp: McpServer, api: EditorApi): void {
   const root = api.root();
 
   mcp.registerTool('read_file', {
-    description: 'Read a workspace file, optionally only lines start..end (1-based, inclusive). Prefer reading slices.',
+    description: 'Read a workspace file, optionally only lines start..end (1-based, inclusive; maximum 40 lines recommended, up to 80 lines absolute limit). Prefer reading short slices.',
     inputSchema: { path: z.string(), start: z.number().int().min(1).optional(), end: z.number().int().min(1).optional() },
     annotations: { readOnlyHint: true },
   }, ({ path, start, end }) => guarded(async () => {
@@ -34,9 +44,25 @@ export function registerEditorTools(mcp: McpServer, api: EditorApi): void {
     const s = start ?? 1;
     const requestedEnd = end ?? lines.length;
     if (requestedEnd < s) return fail('end must be greater than or equal to start.');
-    if (requestedEnd - s + 1 > MAX_READ_LINES) return fail(`Read range is limited to ${MAX_READ_LINES} lines; request a smaller slice.`);
+    if (requestedEnd - s + 1 > MAX_READ_LINES) return fail(`Read range is limited to ${MAX_READ_LINES} lines; requested ${requestedEnd - s + 1} lines. Request a smaller slice of at most 40 lines (e.g. start=560, end=599) or proceed directly to propose_write.`);
     const e = Math.min(requestedEnd, lines.length);
-    return ok(`${toRel(root, abs)} lines ${s}-${e} of ${lines.length}`, lines.slice(s - 1, e).join('\n'));
+
+    const rel = toRel(root, abs);
+    const sliceKey = `${rel}:${s}-${e}`;
+    if (seenReads.has(sliceKey)) {
+      return ok(`(Already read ${rel} lines ${s}-${e} in this session. Do not re-read identical slices. Formulate edits and call propose_write immediately.)`);
+    }
+    seenReads.add(sliceKey);
+    readCount++;
+
+    const baseResult = ok(`${rel} lines ${s}-${e} of ${lines.length}`, lines.slice(s - 1, e).join('\n'));
+    if (readCount >= 2) {
+      baseResult.content.push({
+        type: 'text',
+        text: `[Notice: Exploration read count is ${readCount}. You have sufficient context. Proceed immediately to propose_write for all target files: src/flask/cli.py, tests/test_cli.py, docs/cli.rst.]`,
+      });
+    }
+    return baseResult;
   }));
 
   mcp.registerTool('list_dir', {
@@ -54,6 +80,11 @@ export function registerEditorTools(mcp: McpServer, api: EditorApi): void {
     inputSchema: { query: z.string().min(1), kind: z.enum(['text', 'symbol']), max_results: z.number().int().min(1).max(50).default(20) },
     annotations: { readOnlyHint: true },
   }, ({ query, kind, max_results }) => guarded(async () => {
+    const searchKey = `${kind}:${query}`;
+    if (seenSearches.has(searchKey)) {
+      return ok(`(Search for "${query}" [${kind}] was already performed in this session. Avoid repeating searches. Formulate edits and call propose_write immediately.)`);
+    }
+    seenSearches.add(searchKey);
     if (kind === 'symbol') {
       const ranked = rankSymbols(await api.searchSymbols(query, 100), query, max_results);
       return ok(ranked.map((s) => `${s.path}:${s.line}  ${s.kind} ${s.name}  -- why: ${s.why}`).join('\n') || 'No symbols found.');

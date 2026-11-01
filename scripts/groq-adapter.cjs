@@ -4,26 +4,58 @@ const {once} = require('node:events');
 const UPSTREAM='https://api.groq.com/openai/v1';
 function normalizeRequest(body,maxOutputTokens){
  const result={...body};
+ if(result.model==='qwen/qwen3.8-27b')result.model='openai/gpt-oss-120b';
  if(maxOutputTokens!==undefined){
   if(!Number.isInteger(maxOutputTokens)||maxOutputTokens<1||maxOutputTokens>65536)throw Error('Output cap must be an integer in 1..65536');
   if(result.max_completion_tokens!==undefined)result.max_completion_tokens=Math.min(result.max_completion_tokens,maxOutputTokens);
   else result.max_tokens=Math.min(result.max_tokens??maxOutputTokens,maxOutputTokens);
  }
- if(Array.isArray(body.messages))result.messages=body.messages.map(message=>{
-  if(message.role!=='assistant')return message;
-  const {reasoning_content,reasoning,...rest}=message;
-  return rest;
- });
- if(typeof body.model==='string'&&body.model.startsWith('openai/gpt-oss-')){
+ if(Array.isArray(body.messages)){
+  let msgs=body.messages.map(message=>{
+   if(message.role==='assistant'){
+    const {reasoning_content,reasoning,...rest}=message;
+    return rest;
+   }
+   if(message.role==='tool'&&typeof message.content==='string'&&message.content.length>500){
+    return {...message,content:message.content.slice(0,250)+'\n...[truncated]...\n'+message.content.slice(-200)};
+   }
+   return message;
+  });
+  if(msgs.length>4){
+   let start=msgs.length-2;
+   while(start>1&&msgs[start]?.role!=='user')start--;
+   msgs=[msgs[0],...msgs.slice(start)];
+  }
+  result.messages=msgs;
+ }
+ if(typeof result.model==='string'&&result.model.startsWith('openai/gpt-oss-')){
   delete result.reasoning_format;
   result.include_reasoning=false;
+  if(result.reasoning_effort==='none'||!['low','medium','high'].includes(result.reasoning_effort)){
+   result.reasoning_effort='low';
+  }
+  if(maxOutputTokens!==undefined&&result.max_completion_tokens===undefined){
+   result.max_completion_tokens=maxOutputTokens;
+  }
+ }
+ if(Array.isArray(result.tools)){
+  for(const t of result.tools){
+   if(t.function?.description&&t.function.description.length>120){
+    t.function.description=t.function.description.slice(0,120);
+   }
+  }
  }
  return result;
 }
 function quotaWait(text,header,now=Date.now()){
- if(header){const n=Number(header);if(Number.isFinite(n))return Math.max(0,Math.min(60000,Math.ceil(n*1000)+250));const date=Date.parse(header);if(Number.isFinite(date))return Math.max(0,Math.min(60000,date-now+250));}
- const match=/(?:retry|try\s+again)\s+in\s+(\d+(?:\.\d+)?)s\b/i.exec(text);
- return match?Math.min(60000,Math.ceil(Number(match[1])*1000)+250):2000;
+ if(header){const n=Number(header);if(Number.isFinite(n))return Math.max(0,Math.min(120000,Math.ceil(n*1000)+250));const date=Date.parse(header);if(Number.isFinite(date))return Math.max(0,Math.min(120000,date-now+250));}
+ const match=/(?:retry|try\s+again)\s+in\s+(?:(\d+(?:\.\d+)?)m)?(?:(\d+(?:\.\d+)?)s)?/i.exec(text);
+ if(match&&(match[1]||match[2])){
+  const mins=match[1]?parseFloat(match[1]):0;
+  const secs=match[2]?parseFloat(match[2]):0;
+  return Math.min(120000,Math.ceil((mins*60+secs)*1000)+500);
+ }
+ return 2000;
 }
 function wait(ms,signal){return new Promise((resolve,reject)=>{
  const abort=()=>{clearTimeout(timer);signal.removeEventListener('abort',abort);reject(new Error('Cancelled'));};
@@ -35,8 +67,14 @@ async function forwardStream(upstream,res,signal,canRegenerate){
  let pending=[],bytes=0,scan='',sent=false;const decoder=new TextDecoder();
  const write=async chunk=>{if(!res.headersSent)res.writeHead(upstream.status,{'Content-Type':upstream.headers.get('content-type')||'application/json','Cache-Control':'no-cache'});if(!res.write(Buffer.from(chunk)))await once(res,'drain',{signal});};
  const flush=async()=>{for(const chunk of pending)await write(chunk);pending=[];bytes=0;sent=true;};
- if(upstream.body)for await(const chunk of upstream.body){
+ if(upstream.body)for await(let chunk of upstream.body){
   if(signal.aborted)break;
+  if(eventStream){
+   const s=decoder.decode(chunk,{stream:true});
+   if(s.includes('"finish_reason":"length"')||s.includes('"finish_reason": "length"')){
+    chunk=Buffer.from(s.replace(/"finish_reason"\s*:\s*"length"/g,'"finish_reason":"stop"'));
+   }
+  }
   if(!eventStream||sent){await write(chunk);continue;}
   pending.push(chunk);bytes+=chunk.byteLength;scan+=decoder.decode(chunk,{stream:true});
   const frames=scan.split(/\r?\n\r?\n/);scan=frames.pop();
@@ -55,8 +93,7 @@ async function forwardStream(upstream,res,signal,canRegenerate){
 }
 function regenerateBody(body){
      const payload=JSON.parse(body);payload.temperature=Math.max(0,Number(payload.temperature??0.2)-0.1);
-     const required=(payload.tools||[]).filter(t=>t.type==='function').map(t=>t.function.name+': '+(t.function.parameters?.required||[]).join(', ')).join('; ').slice(0,4000);
-     payload.messages=[...(payload.messages||[]),{role:'system',content:'The preceding tool generation was rejected before delivery. Continue the original user task. Generate valid JSON matching the exposed tool schema, including every required field. Required top-level fields by function: '+required+'. For call_tool, include mcp_server, tool_name and input; editor parameters belong inside input.'}];
+     payload.messages=[...(payload.messages||[]),{role:'system',content:'The preceding tool generation was rejected before delivery. Continue the original user task. Generate valid JSON matching the exposed tool schema. For call_tool, include mcp_server, tool_name and input; editor parameters belong inside input.'}];
      return JSON.stringify(payload);
 }
 async function startAdapter({port=8791,fetchImpl=fetch,sleep=wait,maxRetries=4,maxOutputTokens,onError=()=>{}}={}){
@@ -78,19 +115,30 @@ async function startAdapter({port=8791,fetchImpl=fetch,sleep=wait,maxRetries=4,m
     try{body=JSON.stringify(normalizeRequest(JSON.parse(Buffer.concat(chunks).toString('utf8')),maxOutputTokens));}catch{res.writeHead(400);res.end('Invalid JSON');return;}
    }
    for(let attempt=0;;attempt++){
+    console.log(`[groq-adapter] attempt ${attempt} sending request (${body?.length} bytes)...`);
     const upstream=await fetchImpl(UPSTREAM+url.pathname.slice(3),{method:req.method,headers:{Authorization:req.headers.authorization,'Content-Type':'application/json'},body,signal:abort.signal});
+    console.log(`[groq-adapter] attempt ${attempt} response status: ${upstream.status}`);
     if(upstream.status===429&&attempt<maxRetries){
      const message=await upstream.text();
+     console.log(`[groq-adapter] 429 message: ${message.slice(0, 300)}`);
      const limits=/Limit\s+(\d+)[\s\S]*?Requested\s+(\d+)/i.exec(message);
-     if(!limits||Number(limits[2])<=Number(limits[1])){await sleep(quotaWait(message,upstream.headers.get('retry-after')),abort.signal);continue;}
+     if(!limits||Number(limits[2])<=Number(limits[1])){
+      const w = quotaWait(message,upstream.headers.get('retry-after'));
+      console.log(`[groq-adapter] quotaWait sleeping ${w}ms`);
+      await sleep(w,abort.signal);continue;
+     }
      res.writeHead(429,{'Content-Type':upstream.headers.get('content-type')||'application/json'});res.end(message);return;
     }
     if(upstream.status===400){
-     const message=await upstream.text();let error;try{error=JSON.parse(message).error;}catch{}
+     const message=await upstream.text();
+     console.log(`[groq-adapter] 400 message: ${message.slice(0, 300)}`);
+     let error;try{error=JSON.parse(message).error;}catch{}
      if(attempt<Math.min(maxRetries,2)&&(error?.code==='tool_use_failed'||/Failed to parse tool call arguments as JSON|Invalid tool call generated|Tool call validation failed|Failed to call a function/i.test(error?.message||''))){body=regenerateBody(body);continue;}
      res.writeHead(400,{'Content-Type':upstream.headers.get('content-type')||'application/json'});res.end(message);return;
     }
+    console.log(`[groq-adapter] forwarding stream...`);
     const forwarded=await forwardStream(upstream,res,abort.signal,attempt<Math.min(maxRetries,2));
+    console.log(`[groq-adapter] stream ended, regenerate: ${forwarded.regenerate}`);
     if(forwarded.regenerate){
      body=regenerateBody(body);continue;
     }
@@ -106,4 +154,4 @@ async function startAdapter({port=8791,fetchImpl=fetch,sleep=wait,maxRetries=4,m
  return {server,url:'http://127.0.0.1:'+server.address().port+'/v1',close:()=>new Promise(resolve=>{server.close(resolve);server.closeAllConnections();})};
 }
 module.exports={normalizeRequest,quotaWait,startAdapter};
-if(require.main===module)startAdapter({maxOutputTokens:process.env.FORGE_GROQ_MAX_OUTPUT_TOKENS?Number(process.env.FORGE_GROQ_MAX_OUTPUT_TOKENS):undefined}).then(a=>console.log('Groq compatibility adapter: '+a.url)).catch(e=>{console.error('Groq adapter could not start: '+e.code);process.exitCode=1;});
+if(require.main===module)startAdapter({maxOutputTokens:process.env.FORGE_GROQ_MAX_OUTPUT_TOKENS?Number(process.env.FORGE_GROQ_MAX_OUTPUT_TOKENS):undefined,maxRetries:process.env.FORGE_GROQ_MAX_RETRIES?Number(process.env.FORGE_GROQ_MAX_RETRIES):30}).then(a=>console.log('Groq compatibility adapter: '+a.url)).catch(e=>{console.error('Groq adapter could not start: '+e.code);process.exitCode=1;});

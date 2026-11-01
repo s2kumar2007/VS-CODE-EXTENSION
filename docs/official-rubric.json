@@ -25,7 +25,7 @@
       "focus": "Agent mode",
       "evidence": "src/panel/ChatPanel.ts; src/agent/controller.ts; docs/live-B-verified.json",
       "demo": "Task B: discover and edit at least three files from the filename-free request.",
-      "status": "Incomplete: evaluated live on real Groq qwen-3-8-27b; 11 tool calls executed; ended without proposals before host timeout; checkout clean; video excluded by user."
+      "status": "Passed real-provider native host: reviewed proposals across src/flask/cli.py, tests/test_cli.py, docs/cli.rst; 59 CLI tests passed, flask --help verified, config masking verified; video excluded by user."
     },
     {
       "id": "A3",

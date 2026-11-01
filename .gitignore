@@ -8,3 +8,5 @@ config.json
 # Local validation fixtures and generated submission artifacts
 tmp/
 output/
+__pycache__/
+

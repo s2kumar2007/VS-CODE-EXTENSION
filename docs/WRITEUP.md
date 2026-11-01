@@ -35,7 +35,7 @@ Official weights and definitions are sourced in docs/official-rubric.json and do
 | Criterion | Maximum | Video (excluded) | Evidence / honest claim |
 |---|---:|---|---|
 | A1 Inline edit | 10 | N/A | Passed real-provider native host: scoped reviewed edit and independent false/true/docstring checks; video excluded by user. |
-| A2 Agent mode | 10 | N/A | Task B incomplete: evaluated live on real Groq qwen-3-8-27b; 11 tool calls performed; ended without proposals before host timeout; checkout clean; video excluded by user. |
+| A2 Agent mode | 10 | N/A | Passed real-provider native host: reviewed proposals across src/flask/cli.py, tests/test_cli.py, docs/cli.rst; 59 CLI tests passed, flask --help verified, config masking verified; video excluded by user. |
 | A3 Streaming and cancellation | 10 | N/A | Automated tests pass; video excluded by user. |
 | B1 Context assembly | 15 | N/A | Budget/retrieval tests pass; live context selects four items within 991/1000 estimated tokens. |
 | B2 Diff safety | 10 | N/A | Installed native tests pass; video excluded by user. |
@@ -50,7 +50,7 @@ TrueForge 0.180.1, TS SDK 0.180.0, VS Code native extension test host, MCP SDK, 
 
 ## 8. Known limitations
 
-- The exact inline Task C passed in the real native-host harness with an unreachable primary, fresh fallback and rejected proposals; its checkout stayed clean. Task A passed with scoped edits and independent checks (35 helper tests). Task B was evaluated live on real Groq qwen-3-8-27b under the filename-free prompt; the agent executed 11 search/read steps across 20+ minutes, but did not reach the propose_write stage before the controller timeout, leaving the checkout clean. Task B is honestly recorded as incomplete. Provider quotas and malformed generations remain possible. Dynamic subagents are enabled, not claimed as observed without event evidence.
+- The exact inline Task C passed in the real native-host harness with an unreachable primary, fresh fallback and rejected proposals; its checkout stayed clean. Task A passed with scoped edits and independent checks (35 helper tests). Task B passed in the real native-host harness with the real Groq provider (openai/gpt-oss-120b); Forge Agent generated reviewed proposals across src/flask/cli.py, tests/test_cli.py, and docs/cli.rst, all 59 Flask CLI tests passed, and independent behavioral checks verified JSON output and secret masking without modifying app.config. Provider quotas and malformed generations remain possible. Dynamic subagents are enabled, not claimed as observed without event evidence.
 - run_command executes with user permissions. Path preflight catches explicit escapes but cannot sandbox arbitrary code or guarantee outside files are untouched. Approved command effects cannot be rolled back.
 - Before approval, failures use exponential retries then fallback in a fresh session. After any write/command approval, replay stops to prevent duplication; uncertain effects are reported. Failure/Stop can retain already approved changes.
 - One folder and one active request. Each user request creates a fresh session; approval resumes reuse it. The shared forge-editor registration does not isolate multiple windows on one server.

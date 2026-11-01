@@ -22,13 +22,23 @@ export async function loadAgentFiles(dir: string): Promise<AgentFile[]> {
 export async function syncAgents(client: TrueForge, agents: AgentFile[]): Promise<{ name: string; ok: boolean; error?: string }[]> {
   const results: { name: string; ok: boolean; error?: string }[] = [];
   for (const a of agents) {
-    try {
-      const existing = await findAgentId(client, a.name);
-      if (existing) await client.agents.update(existing, { description: a.description, manifest: a.manifest });
-      else await client.agents.create({ name: a.name, description: a.description, manifest: a.manifest });
+    let lastError: unknown;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      try {
+        const existing = await findAgentId(client, a.name);
+        if (existing) await client.agents.update(existing, { description: a.description, manifest: a.manifest });
+        else await client.agents.create({ name: a.name, description: a.description, manifest: a.manifest });
+        lastError = undefined;
+        break;
+      } catch (err) {
+        lastError = err;
+        await new Promise((r) => setTimeout(r, 1500));
+      }
+    }
+    if (lastError) {
+      results.push({ name: a.name, ok: false, error: lastError instanceof Error ? lastError.message : String(lastError) });
+    } else {
       results.push({ name: a.name, ok: true });
-    } catch (err) {
-      results.push({ name: a.name, ok: false, error: err instanceof Error ? err.message : String(err) });
     }
   }
   return results;

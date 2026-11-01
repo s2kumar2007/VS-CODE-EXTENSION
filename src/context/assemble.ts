@@ -87,6 +87,9 @@ export async function assembleContext(request: string, deps: ContextDeps, budget
   for (const f of files) {
     const base = f.toLowerCase();
     for (const k of keywords) if (base.includes(k)) bump(f, 3, `path contains "${k}"`);
+    if (/(?:^|\/)(?:changes|changelog|history|news)\./i.test(base)) {
+      score.set(f, (score.get(f) ?? 0) - 20);
+    }
   }
   // Symbol-name matches among the current top candidates.
   const top = [...score.entries()].sort((a, b) => b[1] - a[1]).slice(0, 15).map(([f]) => f);

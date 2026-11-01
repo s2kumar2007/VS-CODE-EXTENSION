@@ -14,6 +14,8 @@ export interface ControllerDeps {
   onCancel?: () => void;
   onRunStart?: () => void;
   prepare?: () => Promise<void>;
+  sessionId?: string | (() => string | undefined);
+  onSessionCreated?: (sessionId: string) => void;
 }
 
 function sleepForRetry(ms: number, signal: AbortSignal): Promise<void> {
@@ -94,16 +96,22 @@ export class AgentController {
 
   private async attempt(agent: string, request: string, ui: AgentUi): Promise<'done' | 'cancelled'> {
     this.d.approvals.cancelAll();
+    this.sessionId = undefined;
     await this.d.prepare?.();
     if (this.cancelled) return 'cancelled';
     const client = this.d.getClient();
-    const { data: session } = await client.sessions.create({ agent: { name: agent } }, { abortSignal: this.abort.signal });
-    this.sessionId = session.id;
-    if (this.cancelled) { await client.sessions.cancel(session.id, {}).catch(() => {}); return 'cancelled'; }
+    let sid = typeof this.d.sessionId === 'function' ? this.d.sessionId() : this.d.sessionId;
+    if (!sid) {
+      const { data: session } = await client.sessions.create({ agent: { name: agent } }, { abortSignal: this.abort.signal });
+      sid = session.id;
+      this.d.onSessionCreated?.(sid);
+    }
+    this.sessionId = sid;
+    if (this.cancelled) { await client.sessions.cancel(sid, {}).catch(() => {}); return 'cancelled'; }
     let input: TrueForgeApi.TurnInputItem[] = [{ type: 'user.message', content: request }];
 
     for (let round = 0; round < 200; round++) {
-      const res = await runTurn(client, session.id, input, {
+      const res = await runTurn(client, sid, input, {
         onTextDelta: (id, t) => ui.textDelta(id, t),
         onToolCall: (n) => ui.toolCall(n),
       }, this.abort.signal);
