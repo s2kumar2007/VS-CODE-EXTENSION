@@ -48,12 +48,12 @@ function normalizeRequest(body,maxOutputTokens){
  return result;
 }
 function quotaWait(text,header,now=Date.now()){
- if(header){const n=Number(header);if(Number.isFinite(n))return Math.max(0,Math.min(120000,Math.ceil(n*1000)+250));const date=Date.parse(header);if(Number.isFinite(date))return Math.max(0,Math.min(120000,date-now+250));}
+ if(header){const n=Number(header);if(Number.isFinite(n))return Math.max(0,Math.min(60000,Math.ceil(n*1000)+250));const date=Date.parse(header);if(Number.isFinite(date))return Math.max(0,Math.min(60000,date-now+250));}
  const match=/(?:retry|try\s+again)\s+in\s+(?:(\d+(?:\.\d+)?)m)?(?:(\d+(?:\.\d+)?)s)?/i.exec(text);
  if(match&&(match[1]||match[2])){
   const mins=match[1]?parseFloat(match[1]):0;
   const secs=match[2]?parseFloat(match[2]):0;
-  return Math.min(120000,Math.ceil((mins*60+secs)*1000)+500);
+  return Math.min(60000,Math.ceil((mins*60+secs)*1000)+250);
  }
  return 2000;
 }
