@@ -6,7 +6,7 @@ The user excluded demo-video recording on 29 October 2026. This script remains a
 
 1. Follow README: npm ci, typecheck, test, build. Start TrueForge and configure the Google models and Groq fallback as documented.
 2. Clone https://github.com/pallets/flask.git and checkout tag 3.1.3. git rev-parse HEAD must report 22d924701a6ae2e4cd01e9a15bbaf3946094af65.
-3. python -m venv .venv. Activate with .venv\Scripts\Activate.ps1 in PowerShell, or source .venv/bin/activate on macOS/Linux. Install with python -m pip install -e . pytest.
+3. python -m venv .venv. Activate with .venv\Scripts\Activate.ps1 in PowerShell, or source .venv/bin/activate on macOS/Linux. Install dependencies: pip install -e . "pytest<9" python-dotenv asgiref (pytest 9 breaks Flask 3.1.3 tests).
 4. Open Flask in the extension development host. Check git status --short is empty. Record start time, TrueForge session id, configured model aliases and the initial git status.
 
 ## Task A — inline edit
@@ -17,9 +17,23 @@ The user excluded demo-video recording on 29 October 2026. This script remains a
    Treat the values 'off' and 'n' as false as well, case-insensitively, and update the docstring to list every value that is treated as false.
 
 3. Review the diff; demonstrate accepting/rejecting an independent hunk. Confirm. Nothing should apply before confirmation.
-4. Run this portable verification from the activated environment:
+4. Run the independent verification with PYTHONPATH pointing to the Flask checkout's src folder:
 
-    python -c "import os; from flask.helpers import get_debug_flag; os.environ['FLASK_DEBUG']='off'; assert get_debug_flag() is False; os.environ['FLASK_DEBUG']='N'; assert get_debug_flag() is False"
+   PowerShell:
+   ```powershell
+   $env:PYTHONPATH="<flask>\src"
+   python <extension-repo>\scripts\verify-flask-demo.py A
+   ```
+
+   bash / macOS / Linux:
+   ```bash
+   PYTHONPATH=<flask>/src python <extension-repo>/scripts/verify-flask-demo.py A
+   ```
+
+   Alternatively, run the portable inline check directly from the activated environment:
+   ```bash
+   python -c "import os; from flask.helpers import get_debug_flag; os.environ['FLASK_DEBUG']='off'; assert get_debug_flag() is False; os.environ['FLASK_DEBUG']='N'; assert get_debug_flag() is False"
+   ```
 
 5. Inspect git diff, then demonstrate one Ctrl+Z. Repeat the edit and demonstrate Forge: Undo last applied change after closing/reopening the editor. A later manual edit must prevent Forge undo from overwriting it.
 6. Record observed output, exact error (if any), extension-host stack trace (if present; redact credentials), changed files, end time. Do not invent a trace if none exists.
@@ -34,7 +48,20 @@ Use another fresh disposable checkout so Task A changes do not affect the result
 
 2. Expand Context used; show paths, snippets/signatures, selection reasons and budget. The request names no files.
 3. Review proposals covering implementation, tests and docs (typically src/flask/cli.py, tests/test_cli.py and docs/cli.rst). Confirm only desired hunks. Approve the test command after checking its exact contents.
-4. Verify python -m pytest tests/test_cli.py -q; inspect python -m flask --help; use a small temporary Flask app to check JSON masking for SECRET_KEY, DB_PASSWORD, API_TOKEN and a normal NAME value. The test should assert masked values equal *** and ordinary values remain unchanged.
+4. Verify tests and behavior:
+   - Run pytest: `python -m pytest tests/test_cli.py -q`
+   - Inspect help: `python -m flask --help`
+   - Run independent verification with PYTHONPATH pointing to the Flask checkout's src folder:
+     PowerShell:
+     ```powershell
+     $env:PYTHONPATH="<flask>\src"
+     python <extension-repo>\scripts\verify-flask-demo.py B
+     ```
+     bash / macOS / Linux:
+     ```bash
+     PYTHONPATH=<flask>/src python <extension-repo>/scripts/verify-flask-demo.py B
+     ```
+     This verifies JSON output, masks keys containing SECRET, PASSWORD, TOKEN, or KEY as "***", preserves ordinary values, and confirms application config remains unmutated.
 5. git diff --name-only must show at least three intended files. Show the TrueForge session/turn/tool history and any subagent activity actually observed. Do not claim subagents ran from configuration alone.
 6. Record exact errors, available redacted extension-host trace, elapsed time, test output and changed-file list.
 

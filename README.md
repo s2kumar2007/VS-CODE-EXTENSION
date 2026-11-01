@@ -2,6 +2,31 @@
 
 VS Code client for TrueForge's agent loop, with local MCP editor tools and reviewed edits. No model provider keys are stored in this extension.
 
+## Quick start order
+
+1. **Build and validate extension**:
+   ```bash
+   npm ci
+   npm run typecheck
+   npm test
+   npm run build
+   ```
+2. **Start TrueForge backend** (Terminal A):
+   ```powershell
+   # PowerShell: allow only the local editor MCP host
+   $env:OUTBOUND_URL_ALLOWED_HOSTS='["127.0.0.1"]'
+   npx @truefoundry/trueforge@latest
+   ```
+   *(macOS/Linux: `OUTBOUND_URL_ALLOWED_HOSTS='["127.0.0.1"]' npx @truefoundry/trueforge@latest`)*
+3. **Start Groq compatibility adapter** (Terminal B):
+   ```bash
+   node scripts/groq-adapter.cjs
+   ```
+4. **Launch extension**: Open this repository in VS Code and press **F5** (Run Extension).
+
+> [!NOTE]
+> The Google Gemini free-tier daily quota is very limited (20 requests/day) and may be exhausted quickly on your account, which can trigger automatic fallback to Groq (`openai/gpt-oss-120b`) on the first request. Keep the Groq compatibility adapter running beside TrueForge.
+
 ## Clean-clone setup
 
 Requires Node 22.14+ (validated with Node 24), VS Code 1.90+, git, and Python for the Flask demo.
@@ -38,9 +63,9 @@ The primary and inline agents use Google. At the user's request, the fallback ma
 |---|---|---|
 | Primary | google-gemini/gemini-3-5-flash | gemini-3.5-flash |
 | Inline | google-gemini/gemini-2-5-flash | gemini-2.5-flash |
-| Fallback (setup pending) | groq/gpt-oss-120b | openai/gpt-oss-120b |
+| Fallback | groq/gpt-oss-120b | openai/gpt-oss-120b |
 
-Both models accepted actual generation requests with the available account. The live bad-key test recovered from an invalid OpenAI-compatible provider to Gemini 2.5. That historical fallback probe used Google for both models. The new Groq fallback provides a separate provider once configured; it has not yet been live-verified. Google free-tier quotas apply separately to model requests and blocked longer tool turns during this audit. Gemini 2.5 access can be account-restricted: verify your own account before copying these defaults.
+Both models accepted actual generation requests. The Groq fallback is configured privately and verified; real generation and Task A fallback are verified via `docs/live-A-exact-edits.json`. Task B live execution was also evaluated with Groq (`openai/gpt-oss-120b`) as recorded in `docs/live-B-verified.json`. Google free-tier quotas apply separately to model requests and blocked longer tool turns during this audit. Gemini 2.5 access can be account-restricted: verify your own account before copying these defaults.
 
 The former primary gemini-3.8-flash was listed but returned HTTP 503 during generation. The available OpenAI credential returned HTTP 401. The Groq credential was entered locally and retained only in TrueForge settings. The fallback is configured in forge-agent-fallback.json. Never put keys in this repository. config.example.json is an illustrative checklist, not an importable TrueForge manifest.
 
@@ -95,6 +120,25 @@ Context budget defaults to 6000 estimated tokens (chars/4) INCLUDING context wra
 ## Flask demo and verification
 
 Use pallets/flask tag 3.1.3 (commit 22d924701a6ae2e4cd01e9a15bbaf3946094af65). See [demo steps](scripts/demo.md), [audit log](docs/AUDIT.md), [complete bug table](docs/BUGS.md), [rubric evidence checklist](docs/RUBRIC.md), and [write-up](docs/WRITEUP.md).
+
+In the Flask virtual environment, install dependencies pinning pytest below 9:
+```bash
+pip install -e . "pytest<9" python-dotenv asgiref
+```
+*(pytest 9 breaks Flask 3.1.3 tests).*
+
+To run independent verification for Task A and Task B, set `PYTHONPATH` to the Flask checkout's `src` folder:
+```powershell
+# PowerShell
+$env:PYTHONPATH="<flask>\src"
+python scripts\verify-flask-demo.py A
+python scripts\verify-flask-demo.py B
+```
+```bash
+# bash / macOS / Linux
+PYTHONPATH=<flask>/src python scripts/verify-flask-demo.py A
+PYTHONPATH=<flask>/src python scripts/verify-flask-demo.py B
+```
 
 Unit/integration checks do not need model keys. The audit includes a real Windows VS Code host test for CRLF/undo/ripgrep. Build that optional test with node scripts/build-native-tests.cjs <scratch-output-directory>, then launch a disposable workspace with --extensionTestsPath=<scratch-output-directory>/index.cjs. Set FORGE_NATIVE_RESULT to a scratch JSON path to capture results. Never use your working project as the native test workspace: it creates native.txt.
 
