@@ -40,6 +40,9 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
     preparing = bootstrap(ctx, api).then(() => { readyUrl = url; }).finally(() => { preparing = undefined; });
     return preparing;
   };
+  const outputChannel = vscode.window.createOutputChannel('Forge');
+  ctx.subscriptions.push(outputChannel);
+
   const controller = new AgentController({
     prepare: ensureReady,
     getClient: () => createClient(getConfig().baseUrl),
@@ -47,6 +50,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
     agents: () => ({ primary: getConfig().agentName, fallback: getConfig().fallbackAgentName }),
     onRunStart: () => api?.beginRun(),
     onCancel: () => { store.clear(); api?.cancelCommands(); },
+    logError: (err) => { outputChannel.appendLine(err instanceof Error ? (err.stack ?? err.message) : String(err)); },
   });
 
   ctx.subscriptions.push(

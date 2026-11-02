@@ -95,7 +95,7 @@ export async function runTurn(
   return result;
 }
 
-function toolName(tc: TrueForgeApi.ToolCall): string {
+export function toolName(tc: TrueForgeApi.ToolCall): string {
   const info = tc.toolInfo as { name?: string } | undefined;
   return info?.name ?? tc.function.name;
 }

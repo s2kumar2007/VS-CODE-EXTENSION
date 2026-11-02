@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { runWithFallback, ForgeFailure, CancelledError } from '../src/agent/resilience';
-import { AgentController } from '../src/agent/controller';
+import { AgentController, sanitizeReason } from '../src/agent/controller';
 import { ReviewApprovals } from '../src/review/approvals';
 import { DecisionStore } from '../src/review/decisions';
 import { FakeTrueForge, RecordingUi, created, delta, done, errorDone, toolMsg, approvalRequired } from './fakes';
@@ -85,6 +85,69 @@ describe('controller resilience (stage 7)', () => {
     expect(ui.result?.message).toBe('Both the primary and fallback models failed (401 Unauthorized: invalid api key). No changes were made to your workspace.');
     expect(ui.result?.message).not.toContain('at fetch');
     expect(gitStatus()).toBe('');
+  });
+
+  it('includes sanitized failure reason in retry notice and logs full error', async () => {
+    const { root } = tempRepo();
+    const logged: unknown[] = [];
+    const boom = () => { throw new Error('429 rate limit: Bearer secret_token_12345\n    at internal/fetch'); };
+    const tf = new FakeTrueForge({
+      'forge-agent': [boom, () => [created(), done()]],
+    });
+    const approvals = new ReviewApprovals({ root, ui: { reviewHunks: async () => [], confirmCommand: async () => false, close() {} }, store: new DecisionStore(), readText: async () => undefined });
+    const ctl = new AgentController({
+      getClient: () => tf.client,
+      approvals,
+      agents: () => ({ primary: 'forge-agent' }),
+      retries: 1,
+      backoffMs: 1,
+      sleep: async () => {},
+      logError: (err) => logged.push(err),
+    });
+    const ui = new RecordingUi();
+    await ctl.run('hello', ui);
+    expect(ui.result?.status).toBe('done');
+    expect(logged).toHaveLength(1);
+    expect((logged[0] as Error).message).toContain('secret_token_12345');
+    const retryNotice = ui.notices.find((n) => n.includes('retrying (1)'));
+    expect(retryNotice).toBeDefined();
+    expect(retryNotice).toContain('429 rate limit: [REDACTED]');
+    expect(retryNotice).not.toContain('secret_token_12345');
+    expect(retryNotice).not.toContain('at internal/fetch');
+  });
+
+  it('shows notice "Fallback model stopped early" when fallback finishes after tool calls without propose_write', async () => {
+    const { root } = tempRepo();
+    const boom = () => { throw new Error('Gemini 429 quota'); };
+    const listDirTool = toolMsg('m1', 'tc1', 'list_dir', { path: '.' });
+    const tf = new FakeTrueForge({
+      'forge-agent': [boom, boom, boom],
+      'forge-agent-fallback': [() => [created(), listDirTool, delta('m2', 'Found files, stopping.'), done()]],
+    });
+    const approvals = new ReviewApprovals({ root, ui: { reviewHunks: async () => [], confirmCommand: async () => false, close() {} }, store: new DecisionStore(), readText: async () => undefined });
+    const ctl = new AgentController({
+      getClient: () => tf.client,
+      approvals,
+      agents: () => ({ primary: 'forge-agent', fallback: 'forge-agent-fallback' }),
+      retries: 2,
+      backoffMs: 1,
+      sleep: async () => {},
+    });
+    const ui = new RecordingUi();
+    await ctl.run('implement config', ui);
+    expect(ui.result?.status).toBe('done');
+    expect(ui.notices).toContain('Fallback model stopped early');
+  });
+
+  it('sanitizes reason: strips headers/keys, takes first line, caps at 120 chars', () => {
+    const err = new Error('Request failed with status 401 Authorization: Bearer secret_abc_123\nSecond line\nThird line');
+    const reason = sanitizeReason(err);
+    expect(reason).not.toContain('secret_abc_123');
+    expect(reason).not.toContain('Second line');
+    expect(reason.length).toBeLessThanOrEqual(120);
+
+    const longMsg = 'A'.repeat(200);
+    expect(sanitizeReason(new Error(longMsg)).length).toBe(120);
   });
 });
 

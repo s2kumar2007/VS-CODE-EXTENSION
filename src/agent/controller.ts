@@ -1,5 +1,5 @@
 import type { TrueForge, TrueForgeApi } from '@truefoundry/trueforge-sdk';
-import { describeToolCall, runTurn } from '../forge/turnRunner';
+import { describeToolCall, runTurn, toolName } from '../forge/turnRunner';
 import type { AgentUi, ApprovalHandler } from './types';
 import { CancelledError, ForgeFailure, runWithFallback } from './resilience';
 
@@ -16,6 +16,20 @@ export interface ControllerDeps {
   prepare?: () => Promise<void>;
   sessionId?: string | (() => string | undefined);
   onSessionCreated?: (sessionId: string) => void;
+  logError?: (err: unknown) => void;
+}
+
+export function sanitizeReason(err: unknown): string {
+  const raw = err instanceof Error ? err.message : String(err);
+  let firstLine = raw.split(/[\r\n]+/)[0]?.trim() || 'unknown error';
+  firstLine = firstLine
+    .replace(/(?:Bearer\s+|token\s+|key[:=]\s*)[a-zA-Z0-9_\-\.]+/gi, '[REDACTED]')
+    .replace(/authorization:\s*[^\s]+/gi, 'authorization: [REDACTED]')
+    .trim();
+  if (firstLine.length > 120) {
+    firstLine = firstLine.slice(0, 117) + '...';
+  }
+  return firstLine;
 }
 
 function sleepForRetry(ms: number, signal: AbortSignal): Promise<void> {
@@ -62,7 +76,11 @@ export class AgentController {
         isCancelled: () => this.cancelled,
         canRetry: () => this.approvedOperations === 0,
         attempt: (agent) => this.attempt(agent, request, ui),
-        onRetry: (agent, n) => ui.notice(`Request to "${agent}" failed, retrying (${n})...`),
+        onRetry: (agent, n, err) => {
+          this.d.logError?.(err);
+          const reason = sanitizeReason(err);
+          ui.notice(`Request to "${agent}" failed (${reason}), retrying (${n})...`);
+        },
         onFallback: () => ui.notice('Primary model failed, using fallback'),
       });
       ui.finished(outcome === 'cancelled' ? this.cancelInfo() : { status: 'done' });
@@ -109,18 +127,44 @@ export class AgentController {
     this.sessionId = sid;
     if (this.cancelled) { await client.sessions.cancel(sid, {}).catch(() => {}); return 'cancelled'; }
     let input: TrueForgeApi.TurnInputItem[] = [{ type: 'user.message', content: request }];
+    let hadToolCalls = false;
+    let hadProposeWrite = false;
 
     for (let round = 0; round < 200; round++) {
       const res = await runTurn(client, sid, input, {
         onTextDelta: (id, t) => ui.textDelta(id, t),
-        onToolCall: (n) => ui.toolCall(n),
+        onToolCall: (n) => {
+          hadToolCalls = true;
+          if (n === 'propose_write') hadProposeWrite = true;
+          ui.toolCall(n);
+        },
       }, this.abort.signal);
       if (this.cancelled || res.status === 'cancelled') return 'cancelled';
       if (res.status === 'error') throw new Error(res.error ?? 'the turn ended with an error');
+
+      for (const ev of res.events.values()) {
+        if (ev.type === 'model.message') {
+          for (const tc of ev.toolCalls ?? []) {
+            hadToolCalls = true;
+            const name = toolName(tc);
+            if (name === 'propose_write') hadProposeWrite = true;
+            if (name === 'call_tool' || tc.function?.name === 'call_tool') {
+              try {
+                const parsed = JSON.parse(tc.function?.arguments || '{}');
+                if (parsed.tool_name === 'propose_write' || parsed.input?.tool_name === 'propose_write') {
+                  hadProposeWrite = true;
+                }
+              } catch {}
+            }
+          }
+        }
+      }
+
       if (res.status === 'paused') {
         const items: TrueForgeApi.TurnInputItem[] = [];
         for (const a of res.approvals) {
           const info = describeToolCall(res.events, a);
+          if (info?.name === 'propose_write') hadProposeWrite = true;
           const decision = info
             ? await this.d.approvals.decide(info, this.abort.signal)
             : { status: 'deny' as const, reason: 'Could not read the tool call arguments.' };
@@ -131,7 +175,13 @@ export class AgentController {
         input = items; // a resume turn must not mix user.message with approvals
         continue;
       }
-      if (res.status === 'done') return 'done';
+      if (res.status === 'done') {
+        const isFallback = agent === this.d.agents().fallback;
+        if (isFallback && hadToolCalls && !hadProposeWrite) {
+          ui.notice('Fallback model stopped early');
+        }
+        return 'done';
+      }
       throw new Error('the response stream ended unexpectedly');
     }
     throw new Error('too many approval rounds');

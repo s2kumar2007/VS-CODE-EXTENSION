@@ -31,7 +31,10 @@ describe('context host boundaries',()=>{
     panel.controller={busy:false,run:vi.fn(async()=>{})};panel.post=vi.fn();panel.sending=false;
     panel.deps={listFiles:async()=>['src/config.py'],searchKeyword:async()=>[{path:'src/config.py',line:1,text:'def config():'}],searchImporters:async()=>[],readText:async()=> 'def config():\n  return 1\n',findSymbol:async()=>undefined};
     await panel.send('fix config');
-    expect(panel.controller.run.mock.calls[0][0]).toContain('src/config.py');
+    const msg = panel.controller.run.mock.calls[0][0];
+    expect(msg).toMatch(/^## Task\nfix config\n\n## Context \(hints only, may be incomplete\)\n/);
+    expect(msg).toContain('src/config.py');
+    expect(msg).toContain('## Reminder\nDo the task above: use the tools, call propose_write for every file you change, and do not just describe the workspace.');
     expect(panel.post).toHaveBeenCalledWith(expect.objectContaining({type:'context',items:expect.arrayContaining([expect.objectContaining({reason:expect.stringContaining('config')})])}));
   });
 });

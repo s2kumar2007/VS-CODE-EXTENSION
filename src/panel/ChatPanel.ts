@@ -62,7 +62,7 @@ export class ChatPanel {
       try {
         const ctx = await assembleContext(text, this.deps, getConfig().contextBudget);
         this.post({ type: 'context', items: ctx.items.map((i) => ({ label: i.label, reason: i.reason, tokens: i.tokens })), tokens: ctx.tokens, budget: ctx.budget });
-        message = `${ctx.text}\n\n## Request\n${text}`;
+        message = `## Task\n${text}\n\n## Context (hints only, may be incomplete)\n${ctx.text}\n\n## Reminder\nDo the task above: use the tools, call propose_write for every file you change, and do not just describe the workspace.`;
       } catch { this.post({ type: 'notice', text: 'Context assembly failed; sending the request without it.' }); }
       if (this.sendAbort.signal.aborted) { ui.finished({ status: 'cancelled', message: 'Cancelled - no changes applied' }); return; }
       await this.controller.run(message, ui);
