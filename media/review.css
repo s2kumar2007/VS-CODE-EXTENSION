@@ -1,9 +1,175 @@
-body { font-family: var(--vscode-font-family); color: var(--vscode-foreground); padding: 8px; }
-.hunk { border: 1px solid var(--vscode-panel-border); border-radius: 4px; margin: 8px 0; }
-.hunk.rejected { opacity: 0.5; }
-.hunk header { display: flex; justify-content: space-between; padding: 4px 8px; background: var(--vscode-editor-inactiveSelectionBackground); }
-pre { margin: 0; padding: 4px 8px; font-family: var(--vscode-editor-font-family); overflow-x: auto; }
-.del { background: rgba(255,0,0,0.15); } .add { background: rgba(0,200,0,0.15); }
-button { background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: 0; padding: 4px 10px; margin-right: 6px; cursor: pointer; }
-button.off { background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground); }
-#bottom { position: sticky; bottom: 0; padding: 8px 0; background: var(--vscode-editor-background); }
+body {
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size, 13px);
+  color: var(--vscode-foreground);
+  background: var(--vscode-editor-background);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+#header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  background: var(--vscode-sideBar-background, var(--vscode-editor-background));
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.header-logo {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.header-titles {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.header-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--vscode-foreground);
+  line-height: 1.2;
+}
+
+.header-subtitle {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  line-height: 1.2;
+  margin-top: 2px;
+}
+
+#content {
+  flex: 1;
+  padding: 12px 14px;
+  overflow-y: auto;
+}
+
+#title {
+  margin: 4px 0 6px 0;
+  font-size: 1.1em;
+  font-weight: 600;
+  color: var(--vscode-foreground);
+}
+
+#why {
+  margin-bottom: 12px;
+  font-size: 0.88em;
+  color: var(--vscode-descriptionForeground);
+  line-height: 1.4;
+}
+
+#top {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.hunk {
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 6px;
+  margin: 10px 0;
+  overflow: hidden;
+  background: var(--vscode-editor-background);
+  transition: opacity 0.15s ease;
+}
+
+.hunk.rejected {
+  opacity: 0.45;
+}
+
+.hunk header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  background: var(--vscode-editor-inactiveSelectionBackground);
+  font-size: 0.85em;
+  font-weight: 500;
+}
+
+pre {
+  margin: 0;
+  padding: 6px 10px;
+  font-family: var(--vscode-editor-font-family, Consolas, "Courier New", monospace);
+  font-size: var(--vscode-editor-font-size, 0.9em);
+  overflow-x: auto;
+  line-height: 1.45;
+}
+
+.del {
+  background: var(--vscode-diffEditor-removedTextBackground, rgba(255, 0, 0, 0.15));
+}
+
+.add {
+  background: var(--vscode-diffEditor-insertedTextBackground, rgba(0, 200, 0, 0.15));
+}
+
+button {
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size, 13px);
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  border: 1px solid transparent;
+  padding: 6px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: opacity 0.15s ease, background 0.15s ease;
+  white-space: nowrap;
+}
+
+button:hover:not(:disabled) {
+  background: var(--vscode-button-hoverBackground);
+}
+
+button.off {
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+}
+
+button.off:hover:not(:disabled) {
+  background: var(--vscode-button-secondaryHoverBackground, var(--vscode-button-secondaryBackground));
+}
+
+#bottom {
+  position: sticky;
+  bottom: 0;
+  padding: 10px 14px;
+  background: var(--vscode-editor-background);
+  border-top: 1px solid var(--vscode-panel-border);
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+#confirm {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+}
+
+#cancel {
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+}
+
+#cancel:hover {
+  background: var(--vscode-button-secondaryHoverBackground, var(--vscode-button-secondaryBackground));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button, .hunk {
+    transition: none;
+  }
+}

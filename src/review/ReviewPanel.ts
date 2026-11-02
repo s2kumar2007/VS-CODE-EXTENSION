@@ -31,6 +31,7 @@ export class ReviewPanel implements ReviewUi {
       const panel = vscode.window.createWebviewPanel('forgeReview', `Forge review: ${req.relPath}`, { viewColumn: vscode.ViewColumn.Beside, preserveFocus: true }, {
         enableScripts: true, localResourceRoots: [vscode.Uri.joinPath(this.ctx.extensionUri, 'media')],
       });
+      panel.iconPath = vscode.Uri.joinPath(this.ctx.extensionUri, 'media', 'logo.png');
       this.panel = panel;
       panel.webview.html = this.html(panel.webview);
 
@@ -101,12 +102,22 @@ export class ReviewPanel implements ReviewUi {
     const nonce = randomBytes(16).toString('hex');
     const js = webview.asWebviewUri(vscode.Uri.joinPath(this.ctx.extensionUri, 'media', 'review.js'));
     const css = webview.asWebviewUri(vscode.Uri.joinPath(this.ctx.extensionUri, 'media', 'review.css'));
+    const logo = webview.asWebviewUri(vscode.Uri.joinPath(this.ctx.extensionUri, 'media', 'logo.png'));
     return `<!doctype html><html><head><meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource}; style-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
 <link rel="stylesheet" href="${css}"></head><body>
-<h3 id="title"></h3><div id="why"></div>
-<div id="top"><button id="acceptAll">Accept all</button><button id="rejectAll">Reject all</button></div>
-<div id="hunks"></div>
+<header id="header">
+  <img class="header-logo" src="${logo}" alt="Forge Agent logo" width="28" height="28">
+  <div class="header-titles">
+    <div class="header-title">Forge Review</div>
+    <div class="header-subtitle">Inspect proposed edits before applying</div>
+  </div>
+</header>
+<div id="content">
+  <h3 id="title"></h3><div id="why"></div>
+  <div id="top"><button id="acceptAll">Accept all</button><button id="rejectAll">Reject all</button></div>
+  <div id="hunks"></div>
+</div>
 <div id="bottom"><button id="confirm">Confirm</button><button id="cancel">Cancel</button></div>
 <script nonce="${nonce}" src="${js}"></script></body></html>`;
   }

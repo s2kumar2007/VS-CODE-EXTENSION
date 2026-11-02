@@ -29,6 +29,7 @@ export class ChatPanel {
       localResourceRoots: [vscode.Uri.joinPath(ctx.extensionUri, 'media')],
       retainContextWhenHidden: true,
     });
+    panel.iconPath = vscode.Uri.joinPath(ctx.extensionUri, 'media', 'logo.png');
     ChatPanel.current = new ChatPanel(panel, ctx, controller, deps);
   }
 
@@ -88,9 +89,17 @@ export class ChatPanel {
     const nonce = randomBytes(16).toString('hex');
     const js = webview.asWebviewUri(vscode.Uri.joinPath(this.ctx.extensionUri, 'media', 'main.js'));
     const css = webview.asWebviewUri(vscode.Uri.joinPath(this.ctx.extensionUri, 'media', 'main.css'));
+    const logo = webview.asWebviewUri(vscode.Uri.joinPath(this.ctx.extensionUri, 'media', 'logo.png'));
     return `<!doctype html><html><head><meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource}; style-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
 <link rel="stylesheet" href="${css}"></head><body>
+<header id="header">
+  <img class="header-logo" src="${logo}" alt="Forge Agent logo" width="28" height="28">
+  <div class="header-titles">
+    <div class="header-title">Forge Agent</div>
+    <div class="header-subtitle">Agent loop runs on TrueForge</div>
+  </div>
+</header>
 <div id="log"></div>
 <div id="ac"></div>
 <div id="bar"><textarea id="input" rows="3" placeholder="Ask Forge... (Ctrl+Enter to send)"></textarea>
