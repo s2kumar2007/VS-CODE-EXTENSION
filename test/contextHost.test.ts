@@ -37,4 +37,28 @@ describe('context host boundaries',()=>{
     expect(msg).toContain('## Reminder\nDo the task above: use the tools, call propose_write for every file you change, and do not just describe the workspace.');
     expect(panel.post).toHaveBeenCalledWith(expect.objectContaining({type:'context',items:expect.arrayContaining([expect.objectContaining({reason:expect.stringContaining('config')})])}));
   });
+  it('provides a rebuildRequest callback that uses fallbackContextBudget for the fallback agent and updates the context panel', async () => {
+    const panel = Object.create(ChatPanel.prototype) as any;
+    panel.controller = { busy: false, run: vi.fn(async () => {}) };
+    panel.post = vi.fn();
+    panel.sending = false;
+    panel.deps = {
+      listFiles: async () => ['src/config.py'],
+      searchKeyword: async () => [{ path: 'src/config.py', line: 1, text: 'def config():' }],
+      searchImporters: async () => [],
+      readText: async () => 'def config():\n  return 1\n',
+      findSymbol: async () => undefined,
+    };
+    await panel.send('fix config');
+    const rebuild = panel.controller.run.mock.calls[0][3];
+    expect(typeof rebuild).toBe('function');
+
+    panel.post.mockClear();
+    const fallbackMsg = await rebuild('forge-agent-fallback');
+    expect(fallbackMsg).toContain('src/config.py');
+    expect(panel.post).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'context',
+      budget: 1500,
+    }));
+  });
 });

@@ -27,6 +27,9 @@
       "dynamic_sub_agents": {
         "enabled": true
       },
+      "ask_user_questions": {
+        "enabled": false
+      },
       "context_management": {
         "compaction": {
           "enabled": true,

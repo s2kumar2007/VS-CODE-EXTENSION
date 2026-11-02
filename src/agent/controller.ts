@@ -58,12 +58,18 @@ export class AgentController {
 
   get busy(): boolean { return this.running; }
 
-  async run(request: string, ui: AgentUi, agentOverride?: string): Promise<void> {
+  async run(
+    request: string,
+    ui: AgentUi,
+    agentOverride?: string,
+    rebuildRequest?: (agent: string) => Promise<string>,
+  ): Promise<void> {
     if (this.running) { ui.finished({ status: 'error', message: 'Forge is already working on a request.' }); return; }
     this.running = true;
     this.cancelled = false;
     this.abort = new AbortController();
     this.approvedOperations = 0;
+    let clientToolResponses = 0;
     this.d.onRunStart?.();
     const cfg = this.d.agents();
     try {
@@ -75,7 +81,7 @@ export class AgentController {
         sleep: this.d.sleep ?? ((ms) => sleepForRetry(ms, this.abort.signal)),
         isCancelled: () => this.cancelled,
         canRetry: () => this.approvedOperations === 0,
-        attempt: (agent) => this.attempt(agent, request, ui),
+        attempt: (agent) => this.attempt(agent, request, ui, rebuildRequest, () => ++clientToolResponses),
         onRetry: (agent, n, err) => {
           this.d.logError?.(err);
           const reason = sanitizeReason(err);
@@ -112,7 +118,13 @@ export class AgentController {
     return { status: 'cancelled' as const, message: this.approvedOperations ? `Cancelled - ${this.approvedOperations} approved operation(s) may have completed before you stopped.` : 'Cancelled - no changes applied' };
   }
 
-  private async attempt(agent: string, request: string, ui: AgentUi): Promise<'done' | 'cancelled'> {
+  private async attempt(
+    agent: string,
+    request: string,
+    ui: AgentUi,
+    rebuildRequest?: (agent: string) => Promise<string>,
+    countClientToolResponse?: () => number,
+  ): Promise<'done' | 'cancelled'> {
     this.d.approvals.cancelAll();
     this.sessionId = undefined;
     await this.d.prepare?.();
@@ -126,7 +138,9 @@ export class AgentController {
     }
     this.sessionId = sid;
     if (this.cancelled) { await client.sessions.cancel(sid, {}).catch(() => {}); return 'cancelled'; }
-    let input: TrueForgeApi.TurnInputItem[] = [{ type: 'user.message', content: request }];
+
+    const messageContent = rebuildRequest ? await rebuildRequest(agent) : request;
+    let input: TrueForgeApi.TurnInputItem[] = [{ type: 'user.message', content: messageContent }];
     let hadToolCalls = false;
     let hadProposeWrite = false;
 
@@ -162,6 +176,22 @@ export class AgentController {
 
       if (res.status === 'paused') {
         const items: TrueForgeApi.TurnInputItem[] = [];
+
+        if (res.toolResponses && res.toolResponses.length > 0) {
+          const times = countClientToolResponse ? countClientToolResponse() : 1;
+          if (times > 2) {
+            throw new Error('Unsupported client-side tool was called too many times (limit: 2 per run).');
+          }
+          for (const tr of res.toolResponses) {
+            items.push({
+              type: 'user.tool_response',
+              threadId: tr.threadId,
+              toolCallId: tr.toolCallId,
+              content: 'No user is available to answer. Proceed with your best judgment and use propose_write for edits.',
+            });
+          }
+        }
+
         for (const a of res.approvals) {
           const info = describeToolCall(res.events, a);
           if (info?.name === 'propose_write') hadProposeWrite = true;
@@ -172,7 +202,7 @@ export class AgentController {
           if (decision.status === 'allow' && info && isMutatingTool(info.name)) this.approvedOperations++;
           items.push({ type: 'user.tool_approval', threadId: a.threadId, toolCallId: a.toolCallId, approval: decision });
         }
-        input = items; // a resume turn must not mix user.message with approvals
+        input = items; // resume turn with approvals and/or tool responses
         continue;
       }
       if (res.status === 'done') {

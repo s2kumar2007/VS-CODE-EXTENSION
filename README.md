@@ -89,7 +89,7 @@ The setup helper starts it automatically. After restarting the machine, keep thi
 
     node scripts/groq-adapter.cjs
 
-The configured Groq base URL is http://127.0.0.1:8791/v1. Keep TrueForge's existing 127.0.0.1 outbound allowlist. Model requests above an account's single-request token limit fail directly; the adapter cannot create quota. For the verified free-tier profile, use forge.contextBudget=1500. The fallback compacts at 5500 input tokens and uses compact exact edits to avoid whole-file histories. Official reasoning controls: https://console.groq.com/docs/reasoning.
+The configured Groq base URL is http://127.0.0.1:8791/v1. Keep TrueForge's existing 127.0.0.1 outbound allowlist. Model requests above an account's single-request token limit fail directly; the adapter cannot create quota. For the verified free-tier profile, `forge.fallbackContextBudget` defaults to 1500 (minimum 500) so fallback requests stay within Groq's 8000 TPM limit while the primary agent uses `forge.contextBudget=6000`. The fallback compacts at 5500 input tokens and uses compact exact edits to avoid whole-file histories. Official reasoning controls: https://console.groq.com/docs/reasoning.
 
 ## Usage
 
@@ -116,6 +116,7 @@ Context budget defaults to 6000 estimated tokens (chars/4) INCLUDING context wra
 | forge.agentName | forge-agent |
 | forge.fallbackAgentName | forge-agent-fallback |
 | forge.contextBudget | 6000 |
+| forge.fallbackContextBudget | 1500 |
 
 ## Flask demo and verification
 

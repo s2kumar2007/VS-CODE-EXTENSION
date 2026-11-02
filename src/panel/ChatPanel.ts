@@ -57,15 +57,30 @@ export class ChatPanel {
       finished: (info) => this.post({ type: 'done', status: info.status, message: info.message }),
     };
     try {
-      // Automatic retrieval under a token budget; failure to build context must never block the request.
-      let message = text;
-      try {
-        const ctx = await assembleContext(text, this.deps, getConfig().contextBudget);
-        this.post({ type: 'context', items: ctx.items.map((i) => ({ label: i.label, reason: i.reason, tokens: i.tokens })), tokens: ctx.tokens, budget: ctx.budget });
-        message = `## Task\n${text}\n\n## Context (hints only, may be incomplete)\n${ctx.text}\n\n## Reminder\nDo the task above: use the tools, call propose_write for every file you change, and do not just describe the workspace.`;
-      } catch { this.post({ type: 'notice', text: 'Context assembly failed; sending the request without it.' }); }
+      const buildMessage = async (budget: number): Promise<string> => {
+        try {
+          const ctx = await assembleContext(text, this.deps, budget);
+          this.post({
+            type: 'context',
+            items: ctx.items.map((i) => ({ label: i.label, reason: i.reason, tokens: i.tokens })),
+            tokens: ctx.tokens,
+            budget: ctx.budget,
+          });
+          return `## Task\n${text}\n\n## Context (hints only, may be incomplete)\n${ctx.text}\n\n## Reminder\nDo the task above: use the tools, call propose_write for every file you change, and do not just describe the workspace.`;
+        } catch {
+          this.post({ type: 'notice', text: 'Context assembly failed; sending the request without it.' });
+          return text;
+        }
+      };
+
+      const primaryMessage = await buildMessage(getConfig().contextBudget);
       if (this.sendAbort.signal.aborted) { ui.finished({ status: 'cancelled', message: 'Cancelled - no changes applied' }); return; }
-      await this.controller.run(message, ui);
+      await this.controller.run(primaryMessage, ui, undefined, async (agent) => {
+        if (agent === getConfig().fallbackAgentName) {
+          return await buildMessage(getConfig().fallbackContextBudget);
+        }
+        return primaryMessage;
+      });
     } finally { this.sending = false; this.post({ type: 'busy', value: false }); }
   }
 

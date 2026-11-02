@@ -5,13 +5,15 @@ import type { ToolCallInfo } from '../agent/types';
 export type TurnEvents = Map<string, TrueForgeApi.TurnStreamingEvent>;
 
 export interface PendingApproval { toolCallId: string; threadId: string; sourceEventId: string }
+export interface PendingToolResponse { toolCallId: string; threadId: string }
 
 export interface TurnResult {
   events: TurnEvents;
-  /** done | cancelled | error from turn.done; 'paused' when the turn stopped for approvals; 'unknown' if the stream just ended. */
+  /** done | cancelled | error from turn.done; 'paused' when the turn stopped for approvals or tool responses; 'unknown' if the stream just ended. */
   status: 'done' | 'cancelled' | 'error' | 'paused' | 'unknown';
   error?: string;
   approvals: PendingApproval[];
+  toolResponses: PendingToolResponse[];
 }
 
 export interface TurnHandlers {
@@ -33,9 +35,8 @@ export async function runTurn(
   signal?: AbortSignal,
 ): Promise<TurnResult> {
   const events: TurnEvents = new Map();
-  const result: TurnResult = { events, status: 'unknown', approvals: [] };
+  const result: TurnResult = { events, status: 'unknown', approvals: [], toolResponses: [] };
   let terminal = false;
-  let needsClientResponse = false;
   const reported = new Set<string>();
   const reportTools = (message: TrueForgeApi.ModelMessageEvent) => {
     for (const call of message.toolCalls ?? []) if (!reported.has(call.id)) {
@@ -75,13 +76,17 @@ export async function runTurn(
         result.status = 'paused';
         break;
       case 'tool.response_required':
-        needsClientResponse = true;
-        result.status = 'error';
-        result.error = 'TrueForge requested an unsupported client-side tool response.';
+        if (!Array.isArray(event.toolCalls) || typeof event.threadId !== 'string') throw new Error('TrueForge sent an invalid tool response event.');
+        for (const ref of event.toolCalls) {
+          result.toolResponses.push({ toolCallId: ref.id, threadId: event.threadId });
+        }
+        result.status = 'paused';
         break;
       case 'turn.done':
         terminal = true;
-        result.status = event.state.status === 'done' && needsClientResponse ? 'error' : event.state.status === 'done' && result.approvals.length > 0 ? 'paused' : event.state.status;
+        result.status = event.state.status === 'done' && (result.approvals.length > 0 || result.toolResponses.length > 0)
+          ? 'paused'
+          : event.state.status;
         if (event.state.status === 'error') result.error = event.state.message;
         break;
       default:
@@ -90,8 +95,8 @@ export async function runTurn(
         break;
     }
   }
-  if (!terminal) { result.status = 'unknown'; result.approvals = []; }
-  if (result.status === 'paused' && result.approvals.length === 0) result.status = 'unknown';
+  if (!terminal) { result.status = 'unknown'; result.approvals = []; result.toolResponses = []; }
+  if (result.status === 'paused' && result.approvals.length === 0 && result.toolResponses.length === 0) result.status = 'unknown';
   return result;
 }
 

@@ -47,6 +47,7 @@ export const toolMsg = (msgId: string, callId: string, name: string, args: objec
   toolCalls: [{ id: callId, type: 'function', function: { name, arguments: JSON.stringify(args) }, toolInfo: { type: 'mcp', serverId: 's', serverName: 'forge-editor', name } }],
 });
 export const approvalRequired = (callId: string, srcId: string) => ({ type: 'tool.approval_required', id: id(), threadId: 'main', createdAt: 'x', toolCalls: [{ id: callId, sourceEventId: srcId }] });
+export const toolResponseRequired = (callId: string, threadId = 'main') => ({ type: 'tool.response_required', id: id(), threadId, createdAt: 'x', toolCalls: [{ id: callId }] });
 
 export class RecordingUi implements AgentUi {
   text = ''; notices: string[] = []; tools: string[] = []; result?: FinishInfo;

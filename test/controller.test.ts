@@ -6,7 +6,7 @@ import { AgentController } from '../src/agent/controller';
 import { ReviewApprovals, type ReviewUi } from '../src/review/approvals';
 import { DecisionStore, proposalKey } from '../src/review/decisions';
 import { applyHunks } from '../src/review/hunks';
-import { FakeTrueForge, RecordingUi, approvalRequired, created, delta, done, toolMsg } from './fakes';
+import { FakeTrueForge, RecordingUi, approvalRequired, created, delta, done, toolMsg, toolResponseRequired } from './fakes';
 
 const OLD = 'a\nb\nc\nd\ne\nf\n';
 const NEW = 'a\nB\nc\nd\ne\nF\n';
@@ -99,5 +99,82 @@ describe('concurrent and stale approvals', () => {
     const second=new RecordingUi();await ctl.run('second',second);
     expect(second.result?.message).toContain('already working');
     release([1]);await running;expect(store.size).toBe(0);
+  });
+});
+
+describe('unsupported client-side tool safety net', () => {
+  it('responds to tool.response_required with guidance and continues the run', async () => {
+    const { approvals } = setup([1]);
+    const tf = new FakeTrueForge({
+      p: [
+        () => [created(), toolResponseRequired('call-question'), done()],
+        (input) => {
+          expect(input).toEqual([{
+            type: 'user.tool_response',
+            threadId: 'main',
+            toolCallId: 'call-question',
+            content: 'No user is available to answer. Proceed with your best judgment and use propose_write for edits.',
+          }]);
+          return [created(), delta('m2', 'Finished.'), done()];
+        },
+      ],
+    });
+    const ctl = new AgentController({ getClient: () => tf.client, approvals, agents: () => ({ primary: 'p' }), retries: 0 });
+    const ui = new RecordingUi();
+    await ctl.run('ask question test', ui);
+    expect(ui.result?.status).toBe('done');
+    expect(ui.text).toBe('Finished.');
+    expect(tf.inputs).toHaveLength(2);
+  });
+
+  it('fails with a clear message when unsupported tool responses exceed 2 in one run', async () => {
+    const { approvals } = setup([]);
+    const tf = new FakeTrueForge({
+      p: [
+        () => [created(), toolResponseRequired('q1'), done()],
+        () => [created(), toolResponseRequired('q2'), done()],
+        () => [created(), toolResponseRequired('q3'), done()],
+      ],
+    });
+    const ctl = new AgentController({ getClient: () => tf.client, approvals, agents: () => ({ primary: 'p' }), retries: 0 });
+    const ui = new RecordingUi();
+    await ctl.run('infinite questions', ui);
+    expect(ui.result?.status).toBe('error');
+    expect(ui.result?.message).toContain('Unsupported client-side tool was called too many times');
+    expect(tf.inputs).toHaveLength(3);
+  });
+});
+
+describe('fallback message rebuilding with smaller context budget', () => {
+  it('rebuilds the message with fallback budget when switching to fallback agent', async () => {
+    const { approvals } = setup([1]);
+    const boom = () => { throw new Error('Primary rate limit'); };
+    const tf = new FakeTrueForge({
+      p: [boom, boom, boom],
+      f: [
+        (input) => {
+          expect(input[0].content).toBe('rebuilt for fallback');
+          return [created(), delta('m1', 'Fallback done'), done()];
+        },
+      ],
+    });
+    const ctl = new AgentController({
+      getClient: () => tf.client,
+      approvals,
+      agents: () => ({ primary: 'p', fallback: 'f' }),
+      retries: 2,
+      backoffMs: 1,
+      sleep: async () => {},
+    });
+    const ui = new RecordingUi();
+    const rebuild = async (agent: string) => {
+      if (agent === 'f') return 'rebuilt for fallback';
+      return 'primary message';
+    };
+    await ctl.run('initial message', ui, undefined, rebuild);
+    expect(ui.result?.status).toBe('done');
+    expect(ui.text).toBe('Fallback done');
+    expect(tf.inputs[0]![0].content).toBe('primary message');
+    expect(tf.inputs.at(-1)![0].content).toBe('rebuilt for fallback');
   });
 });

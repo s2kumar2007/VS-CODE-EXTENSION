@@ -53,7 +53,14 @@
         "forge.contextBudget": {
           "type": "number",
           "default": 6000,
+          "minimum": 500,
           "description": "Token budget (~4 chars/token) for automatically assembled context."
+        },
+        "forge.fallbackContextBudget": {
+          "type": "number",
+          "default": 1500,
+          "minimum": 500,
+          "description": "Token budget (~4 chars/token) for context when falling back to Groq."
         }
       }
     },

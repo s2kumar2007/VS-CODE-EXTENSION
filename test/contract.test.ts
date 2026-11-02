@@ -91,9 +91,9 @@ it('reports a tool streamed only as indexed fragments exactly once',async()=>{
  const result=await runTurn(tf.client,s.id,[],{onTextDelta(){},onToolCall:n=>calls.push(n)});
  expect(calls).toEqual(['propose_write']);expect(describeToolCall(result.events,result.approvals[0]!)?.args).toEqual({path:'a'});
 });
-it('does not claim completion when a client-side tool response is still required',async()=>{
+it('pauses and yields pending tool responses when client-side response is required',async()=>{
  const tf=new FakeTrueForge({p:[()=>[created(),{type:'tool.response_required',id:'question',threadId:'main',toolCalls:[{id:'q',sourceEventId:'m'}]},done()]]});const {data:s}=await tf.client.sessions.create({agent:{name:'p'}});
- const result=await runTurn(tf.client,s.id,[],{onTextDelta(){},onToolCall(){}});expect(result.status).toBe('error');expect(result.error).toContain('unsupported client-side tool response');
+ const result=await runTurn(tf.client,s.id,[],{onTextDelta(){},onToolCall(){}});expect(result.status).toBe('paused');expect(result.toolResponses).toEqual([{toolCallId:'q',threadId:'main'}]);
 });
 
 it('ignores thread.context_compaction_started in the middle of a turn and completes with the same result', async () => {
