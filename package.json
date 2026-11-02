@@ -70,7 +70,8 @@
     "build": "node esbuild.js",
     "watch": "node esbuild.js --watch",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "package:win": "vsce package --target win32-x64 --out output/forge-agent-win32-x64.vsix"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",
@@ -82,6 +83,7 @@
   "devDependencies": {
     "@types/node": "^22.20.5",
     "@types/vscode": "^1.90.0",
+    "@vscode/vsce": "^4.1.0",
     "esbuild": "^0.28.2",
     "typescript": "^7.0.2",
     "vitest": "^5.0.5"
