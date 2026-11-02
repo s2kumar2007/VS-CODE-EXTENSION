@@ -66,7 +66,10 @@ async function bootstrap(ctx: vscode.ExtensionContext, api: VsCodeEditorApi | un
   await registerMcpServer(client, mcp.url, mcp.token);
   const agents = await loadAgentFiles(vscode.Uri.joinPath(ctx.extensionUri, 'agents').fsPath);
   const failed = (await syncAgents(client, agents)).filter(r => !r.ok);
-  if (failed.length) throw new Error('Configure the required models in TrueForge before running Forge.');
+  if (failed.length) {
+    const details = failed.map((f) => `${f.name}: ${f.error ?? 'unknown error'}`).join('; ');
+    throw new Error(`Configure the required models in TrueForge before running Forge. Failed to sync: ${details}`);
+  }
 }
 
 export async function deactivate(): Promise<void> { await mcp?.dispose(); }
