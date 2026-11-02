@@ -95,3 +95,37 @@ it('does not claim completion when a client-side tool response is still required
  const tf=new FakeTrueForge({p:[()=>[created(),{type:'tool.response_required',id:'question',threadId:'main',toolCalls:[{id:'q',sourceEventId:'m'}]},done()]]});const {data:s}=await tf.client.sessions.create({agent:{name:'p'}});
  const result=await runTurn(tf.client,s.id,[],{onTextDelta(){},onToolCall(){}});expect(result.status).toBe('error');expect(result.error).toContain('unsupported client-side tool response');
 });
+
+it('ignores thread.context_compaction_started in the middle of a turn and completes with the same result', async () => {
+  const makeScript = (includeCompaction: boolean) => () => {
+    const events: any[] = [
+      created(),
+      toolMsg('source', 'call', 'propose_write', { path: 'a.py', new_content: 'val' }),
+    ];
+    if (includeCompaction) {
+      events.push({
+        type: 'thread.context_compaction_started',
+        id: 'compaction-1',
+        threadId: 'main',
+        createdAt: 'x',
+        trigger: { type: 'input_tokens', value: 5500 },
+      });
+    }
+    events.push(approvalRequired('call', 'source'), done());
+    return events;
+  };
+
+  const tfBaseline = new FakeTrueForge({ p: [makeScript(false)] });
+  const { data: s1 } = await tfBaseline.client.sessions.create({ agent: { name: 'p' } });
+  const baseline = await runTurn(tfBaseline.client, s1.id, [], { onTextDelta() {}, onToolCall() {} });
+
+  const tfCompacted = new FakeTrueForge({ p: [makeScript(true)] });
+  const { data: s2 } = await tfCompacted.client.sessions.create({ agent: { name: 'p' } });
+  const result = await runTurn(tfCompacted.client, s2.id, [], { onTextDelta() {}, onToolCall() {} });
+
+  expect(result.status).toBe('paused');
+  expect(result.status).toBe(baseline.status);
+  expect(result.approvals).toEqual(baseline.approvals);
+  expect(result.error).toBe(baseline.error);
+  expect(describeToolCall(result.events, result.approvals[0]!)).toEqual(describeToolCall(baseline.events, baseline.approvals[0]!));
+});

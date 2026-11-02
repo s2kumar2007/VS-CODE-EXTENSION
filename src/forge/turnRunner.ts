@@ -85,6 +85,8 @@ export async function runTurn(
         if (event.state.status === 'error') result.error = event.state.message;
         break;
       default:
+        // Any unhandled event types (including thread.context_compaction_started,
+        // thread.context_compaction_finished, or any new types) are safely ignored.
         break;
     }
   }

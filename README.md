@@ -13,11 +13,11 @@ VS Code client for TrueForge's agent loop, with local MCP editor tools and revie
    ```
 2. **Start TrueForge backend** (Terminal A):
    ```powershell
-   # PowerShell: allow only the local editor MCP host
+   # PowerShell: allow only the local editor MCP host (pin version to tested 0.182.0)
    $env:OUTBOUND_URL_ALLOWED_HOSTS='["127.0.0.1"]'
-   npx @truefoundry/trueforge@latest
+   npx @truefoundry/trueforge@0.182.0
    ```
-   *(macOS/Linux: `OUTBOUND_URL_ALLOWED_HOSTS='["127.0.0.1"]' npx @truefoundry/trueforge@latest`)*
+   *(macOS/Linux: `OUTBOUND_URL_ALLOWED_HOSTS='["127.0.0.1"]' npx @truefoundry/trueforge@0.182.0`)*
 3. **Start Groq compatibility adapter** (Terminal B):
    ```bash
    node scripts/groq-adapter.cjs
@@ -39,15 +39,15 @@ Requires Node 22.14+ (validated with Node 24), VS Code 1.90+, git, and Python fo
     npm test
     npm run build
 
-3. In a separate terminal, start TrueForge:
+3. In a separate terminal, start TrueForge (pinned version recommended):
 
     # PowerShell: allow only the local editor MCP host
     $env:OUTBOUND_URL_ALLOWED_HOSTS='["127.0.0.1"]'
-    npx @truefoundry/trueforge@latest
+    npx @truefoundry/trueforge@0.182.0
 
-   macOS/Linux: `OUTBOUND_URL_ALLOWED_HOSTS='["127.0.0.1"]' npx @truefoundry/trueforge@latest`. This explicit host allowlist is required by TrueForge 0.180.1 for the loopback editor MCP URL.
+   macOS/Linux: `OUTBOUND_URL_ALLOWED_HOSTS='["127.0.0.1"]' npx @truefoundry/trueforge@0.182.0`. This explicit host allowlist is required for the loopback editor MCP URL.
 
-   UI: http://localhost:8790. Local API docs: http://localhost:8790/api/v1/docs, schema: /api/v1/openapi.json. Tested CLI version: 0.180.1, SDK: 0.180.0. This extension assumes local no-auth TrueForge; authenticated remote hosting is not configured here.
+   UI: http://localhost:8790. Local API docs: http://localhost:8790/api/v1/docs, schema: /api/v1/openapi.json. Tested pair: TrueForge server 0.182.0 with `@truefoundry/trueforge-sdk` 0.182.0. Users should start TrueForge with a pinned version if possible: `npx @truefoundry/trueforge@0.182.0`. This extension assumes local no-auth TrueForge; authenticated remote hosting is not configured here.
 4. Configure the primary/inline Google model aliases and the Groq fallback below in TrueForge Settings, using your own keys. The secure Groq setup helper is described below. A fresh server starts with no configured models. Never put keys in this repository or VS Code settings.
 5. Run code . in the extension repository, press F5 (Run Extension), then open your disposable Flask checkout in the development host. Alternatively:
 
